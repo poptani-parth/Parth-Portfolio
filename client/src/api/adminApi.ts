@@ -354,19 +354,19 @@ export const createAdminApi = (
 
     // --- CONTACT MESSAGES ---
     getContactMessages: async (): Promise<ContactMessageDTO[]> => {
-      const res = await fetchWithAuth('/api/admin/contact-messages', { method: 'GET' });
+      const res = await fetchWithAuth('/api/admin/contact', { method: 'GET' });
       return handleResponse<ContactMessageDTO[]>(res);
     },
 
     markMessageRead: async (id: string): Promise<void> => {
-      const res = await fetchWithAuth(`/api/admin/contact-messages/${id}/read`, {
+      const res = await fetchWithAuth(`/api/admin/contact/${id}/read`, {
         method: 'PATCH',
       });
       return handleResponse<void>(res);
     },
 
     archiveMessage: async (id: string): Promise<void> => {
-      const res = await fetchWithAuth(`/api/admin/contact-messages/${id}/archive`, {
+      const res = await fetchWithAuth(`/api/admin/contact/${id}/archive`, {
         method: 'PATCH',
       });
       return handleResponse<void>(res);
