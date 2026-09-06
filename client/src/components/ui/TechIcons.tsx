@@ -19,17 +19,22 @@ import {
   Rocket,
   Shield,
   Zap,
-  LayoutGrid
+  LayoutGrid,
 } from 'lucide-react';
 
 interface TechIconProps {
-  name: string;
+  name?: string | null;
   className?: string;
   size?: number;
 }
 
-export const TechIcon: React.FC<TechIconProps> = ({ name, className = 'w-5 h-5', size = 20 }) => {
-  const normalized = name.toLowerCase().trim();
+export const TechIcon: React.FC<TechIconProps> = ({
+  name = '',
+  className = 'w-5 h-5',
+  size = 20,
+}) => {
+  // Defensive guard: ensure name is always a valid string
+  const normalized = String(name || '').toLowerCase().trim();
 
   // Custom visual SVG/Icon handlers for distinct tech identities
   if (normalized.includes('spring')) {
@@ -94,7 +99,12 @@ export const TechIcon: React.FC<TechIconProps> = ({ name, className = 'w-5 h-5',
     );
   }
 
-  if (normalized.includes('claude') || normalized.includes('chatgpt') || normalized.includes('copilot') || normalized.includes('ai')) {
+  if (
+    normalized.includes('claude') ||
+    normalized.includes('chatgpt') ||
+    normalized.includes('copilot') ||
+    normalized.includes('ai')
+  ) {
     return (
       <span className={`inline-flex items-center justify-center text-purple-400 ${className}`}>
         <Sparkles className="w-full h-full" />
@@ -158,7 +168,11 @@ export const TechIcon: React.FC<TechIconProps> = ({ name, className = 'w-5 h-5',
     );
   }
 
-  if (normalized.includes('rest') || normalized.includes('api') || normalized.includes('jwt')) {
+  if (
+    normalized.includes('rest') ||
+    normalized.includes('api') ||
+    normalized.includes('jwt')
+  ) {
     return (
       <span className={`inline-flex items-center justify-center text-violet-400 ${className}`}>
         <Zap className="w-full h-full" />
@@ -182,7 +196,7 @@ export const TechIcon: React.FC<TechIconProps> = ({ name, className = 'w-5 h-5',
     );
   }
 
-  // Fallback icon
+  // Safe fallback icon
   return (
     <span className={`inline-flex items-center justify-center text-blue-400 ${className}`}>
       <Code2 className="w-full h-full" />

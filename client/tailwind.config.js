@@ -10,7 +10,7 @@ export default {
       fontFamily: {
         sans: ['Outfit', 'Plus Jakarta Sans', 'sans-serif'],
         syne: ['Syne', 'sans-serif'],
-        cambria: ['Cambria', 'serif'],
+        cambria: ['Cambria Math', 'serif'],
       },
     },
   },

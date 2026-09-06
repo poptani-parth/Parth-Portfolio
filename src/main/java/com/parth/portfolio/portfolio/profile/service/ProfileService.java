@@ -32,7 +32,9 @@ public class ProfileService {
             profile.getResumeUrl(),
             profile.getGithubUrl(),
             profile.getLinkedinUrl(),
-            profile.getProfileImageUrl()
+            profile.getProfileImageUrl(),
+            profile.getYearsOfExperience(),
+            profile.getShowExperienceInProfile()
         );
     }
 }

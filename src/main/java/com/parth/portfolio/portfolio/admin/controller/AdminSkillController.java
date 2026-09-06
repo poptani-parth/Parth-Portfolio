@@ -59,7 +59,7 @@ public class AdminSkillController {
     @Operation(summary = "Reorder skills", description = "Updates skill order values for drag-and-drop sorting")
 
     public ResponseEntity<Void> reorder(
-            @Valid @RequestBody List<ReorderItemRequest> items) {
+            @RequestBody List<@Valid ReorderItemRequest> items) {
 
         skillService.reorder(items);
 
@@ -68,7 +68,7 @@ public class AdminSkillController {
 
     @PostMapping("/bulk")
     @Operation(summary = "Create multiple skills", description = "Bulk insert skills into a category")
-    public ResponseEntity<List<AdminSkillResponse>> createBulkSkills(@Valid @RequestBody List<SkillRequest> requests) {
+    public ResponseEntity<List<AdminSkillResponse>> createBulkSkills(@RequestBody List<@Valid SkillRequest> requests) {
         List<AdminSkillResponse> createdSkills = skillService.createBulk(requests);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdSkills);
     }

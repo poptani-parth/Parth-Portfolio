@@ -46,6 +46,8 @@ public class AdminProfileService {
         profile.setGithubUrl(request.githubUrl());
         profile.setLinkedinUrl(request.linkedinUrl());
         profile.setProfileImageUrl(request.profileImageUrl());
+        profile.setYearsOfExperience(request.yearsOfExperience());
+        profile.setShowExperienceInProfile(request.showExperienceInProfile());
         profile.setActive(request.active());
     }
 
@@ -63,6 +65,8 @@ public class AdminProfileService {
                 profile.getGithubUrl(),
                 profile.getLinkedinUrl(),
                 profile.getProfileImageUrl(),
+                profile.getYearsOfExperience(),
+                profile.getShowExperienceInProfile(),
                 profile.isActive(),
                 profile.getCreatedAt(),
                 profile.getUpdatedAt()

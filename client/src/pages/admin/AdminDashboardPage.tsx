@@ -1,256 +1,276 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from'react';
+import { useNavigate, Link } from'react-router-dom';
 import {
-  User, Layers, GraduationCap, Briefcase, Code2, FolderTree,
-  ImageIcon, Mail, Settings, LogOut, Moon, Sun, ExternalLink,
-  Menu, X, Server, ChevronRight
-} from 'lucide-react';
-import { useAdminAuth } from '../../context/AdminAuthContext';
-import { useToast } from '../../context/ToastContext';
-import { useTheme } from '../../context/ThemeContext';
+ LayoutDashboard,
+ User,
+ Code2,
+ Layers,
+ Briefcase,
+ GraduationCap,
+ ImageIcon,
+ Mail,
+ ShieldAlert,
+ ExternalLink,
+ Moon,
+ Sun,
+ LogOut,
+ Menu,
+ X,
+ Lock,
+} from'lucide-react';
+import { useAdminAuth } from'../../context/AdminAuthContext';
+import { useToast } from'../../context/ToastContext';
+import { useTheme } from'../../context/ThemeContext';
 
 // Admin Sections
-import { ProfileAdminSection } from '../../components/admin/sections/ProfileAdminSection';
-import { ProjectsAdminSection } from '../../components/admin/sections/ProjectsAdminSection';
-import { EducationAdminSection } from '../../components/admin/sections/EducationAdminSection';
-import { ExperienceAdminSection } from '../../components/admin/sections/ExperienceAdminSection';
-import { SkillsAdminSection } from '../../components/admin/sections/SkillsAdminSection';
-import { SkillCategoriesAdminSection } from '../../components/admin/sections/SkillCategoriesAdminSection';
-import { MediaAdminSection } from '../../components/admin/sections/MediaAdminSection';
-import { ContactMessagesAdminSection } from '../../components/admin/sections/ContactMessagesAdminSection';
-import { SettingsAdminSection } from '../../components/admin/sections/SettingsAdminSection';
+import { OverviewAdminSection } from'../../components/admin/sections/OverviewAdminSection';
+import { ProfileAdminSection } from'../../components/admin/sections/ProfileAdminSection';
+import { ProjectsAdminSection } from'../../components/admin/sections/ProjectsAdminSection';
+import { EducationAdminSection } from'../../components/admin/sections/EducationAdminSection';
+import { ExperienceAdminSection } from'../../components/admin/sections/ExperienceAdminSection';
+import { SkillsAdminSection } from'../../components/admin/sections/SkillsAdminSection';
+import { MediaAdminSection } from'../../components/admin/sections/MediaAdminSection';
+import { ContactMessagesAdminSection } from'../../components/admin/sections/ContactMessagesAdminSection';
+import { SettingsAdminSection } from'../../components/admin/sections/SettingsAdminSection';
 
-type AdminTab = 'projects' | 'profile' | 'experience' | 'education' | 'skills' | 'categories' | 'media' | 'contact' | 'settings';
+export type AdminTab =
+ |'overview'
+ |'profile'
+ |'skills'
+ |'projects'
+ |'experience'
+ |'education'
+ |'media'
+ |'contact'
+ |'settings';
 
 export const AdminDashboardPage: React.FC = () => {
-  const navigate = useNavigate();
-  // FIXED: Merged duplicate useAdminAuth destructurings
-  const { isAuthenticated, isValidating, adminUser, logout } = useAdminAuth(); 
-  const { showSuccess } = useToast();
-  const { isDark, toggleTheme } = useTheme();
+ const navigate = useNavigate();
+ const { isAuthenticated, isValidating, adminUser, logout } = useAdminAuth();
+ const { showSuccess } = useToast();
+ const { isDark, toggleTheme } = useTheme();
 
-  const [activeTab, setActiveTab] = useState<AdminTab>('projects');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+ const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+ const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  useEffect(() => {
-    // Only redirect if validation is finished and the user is NOT authenticated
-    if (!isValidating && !isAuthenticated) {
-      navigate('/admin/login', { replace: true });
-    }
-  }, [isAuthenticated, isValidating, navigate]);
+ useEffect(() => {
+ if (!isValidating && !isAuthenticated) {
+ navigate('/admin/login', { replace: true });
+ }
+ }, [isAuthenticated, isValidating, navigate]);
 
-  const handleLogout = () => {
-    logout();
-    showSuccess('Signed out', 'Admin session ended safely');
-    navigate('/admin/login', { replace: true });
-  };
+ const handleLogout = () => {
+ logout();
+ showSuccess('Signed out','Admin session ended safely');
+ navigate('/admin/login', { replace: true });
+ };
 
-  const navItems = [
-    { id: 'projects', label: 'Projects & Work', icon: Layers },
-    { id: 'profile', label: 'Profile & Bio', icon: User },
-    { id: 'experience', label: 'Experience', icon: Briefcase },
-    { id: 'education', label: 'Education', icon: GraduationCap },
-    { id: 'skills', label: 'Skills & Tech', icon: Code2 },
-    { id: 'categories', label: 'Categories', icon: FolderTree },
-    { id: 'media', label: 'Media Library', icon: ImageIcon },
-    { id: 'contact', label: 'Inquiries & Messages', icon: Mail },
-    { id: 'settings', label: 'Settings & API', icon: Settings },
-  ];
+ const navItems = [
+ { id:'overview', label:'Overview', icon: LayoutDashboard },
+ { id:'profile', label:'Profile', icon: User },
+ { id:'skills', label:'Skills', icon: Code2 },
+ { id:'projects', label:'Projects', icon: Layers },
+ { id:'experience', label:'Experience', icon: Briefcase, count:'R0' },
+ { id:'education', label:'Education', icon: GraduationCap, count:'R0' },
+ { id:'media', label:'Media', icon: ImageIcon },
+ { id:'contact', label:'Messages', icon: Mail },
+ { id:'settings', label:'Security & State', icon: ShieldAlert },
+ ];
 
-  // FIXED: Display a loading skeleton/spinner while the startup probe runs
-  if (isValidating) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] dark:bg-[#09090b]">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-xs text-slate-500 dark:text-zinc-400 font-bold uppercase tracking-wider">Verifying Session...</p>
-        </div>
-      </div>
-    );
-  }
+ if (isValidating) {
+ return (
+ <div className="min-h-screen flex items-center justify-center bg-theme-bg text-theme-text">
+ <div className="flex flex-col items-center gap-3">
+ <div
+ className="w-8 h-8 border-3 border-t-transparent rounded-full animate-spin"
+ style={{ borderColor:'rgb(43, 127, 255)', borderTopColor:'transparent' }}
+ />
+ <p className="text-xs text-theme-text-muted font-mono uppercase tracking-widest">
+ Verifying Session...
+ </p>
+ </div>
+ </div>
+ );
+ }
 
-  if (!isAuthenticated) {
-    return null;
-  }
+ if (!isAuthenticated) return null;
 
-  return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#09090b] text-slate-900 dark:text-zinc-100 flex flex-col font-sans transition-colors duration-200">
-      {/* Top Header */}
-      <header className="sticky top-0 z-40 bg-white/80 dark:bg-[#121215]/80 backdrop-blur-md border-b border-slate-200/80 dark:border-zinc-800/80 px-4 sm:px-8 py-3.5 flex items-center justify-between transition-colors">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-xl text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800"
-            aria-label="Toggle navigation menu"
-          >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
+ return (
+ <div className="h-screen w-screen overflow-hidden bg-theme-bg text-theme-text flex flex-col md:flex-row font-sans selection:bg-[rgba(43,127,255,0.2)] selection:text-[rgb(43,127,255)]">
+ {/* Mobile Top Header */}
+ <div className="md:hidden shrink-0 flex items-center justify-between p-4 border-b border-theme-border bg-theme-card dark:bg-[#0c0d10] z-40">
+ <div className="flex items-center gap-2">
+ <div
+ className="w-8 h-8 rounded-lg border flex items-center justify-center"
+ style={{
+ backgroundColor:'rgba(43, 127, 255, 0.1)',
+ borderColor:'rgba(43, 127, 255, 0.25)',
+ color:'rgb(43, 127, 255)',
+ }}
+ >
+ <Lock className="w-4 h-4" />
+ </div>
+ <span className="text-xs font-bold tracking-wider uppercase font-mono text-theme-text">
+ Admin Console
+ </span>
+ </div>
+ <button
+ onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+ className="p-2 rounded-lg text-theme-text-muted hover:text-slate-900 dark:hover:text-white"
+ >
+ {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+ </button>
+ </div>
 
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-bold text-sm shadow-xs">
-              PP
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
-                  Parth Poptani
-                </h1>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/60">
-                  Workspace
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-500 dark:text-zinc-400">
-                Backend Portfolio Admin
-              </p>
-            </div>
-          </div>
-        </div>
+ {/* Left Sidebar */}
+ <aside
+ className={`fixed md:static inset-y-0 left-0 z-50 w-64 h-full shrink-0 bg-theme-card dark:bg-[#0c0d10] border-r border-theme-border flex flex-col justify-between p-5 transition-transform duration-200 ${
+ mobileMenuOpen ?'translate-x-0' :'-translate-x-full md:translate-x-0'
+ }`}
+ >
+ <div className="flex flex-col min-h-0 flex-1 space-y-6">
+ {/* Brand Header */}
+ <div className="shrink-0 flex items-center gap-3 px-1 py-1">
+ <div
+ className="w-9 h-9 rounded-xl border flex items-center justify-center shrink-0"
+ style={{
+ backgroundColor:'rgba(43, 127, 255, 0.1)',
+ borderColor:'rgba(43, 127, 255, 0.25)',
+ color:'rgb(43, 127, 255)',
+ }}
+ >
+ <Lock className="w-4 h-4" />
+ </div>
+ <div>
+ <div className="text-xs font-bold tracking-widest uppercase font-mono text-theme-text">
+ Admin Console
+ </div>
+ <div
+ className="text-[10px] font-mono flex items-center gap-1.5"
+ style={{ color:'rgb(43, 127, 255)' }}
+ >
+ <span
+ className="w-1.5 h-1.5 rounded-full animate-pulse"
+ style={{ backgroundColor:'rgb(43, 127, 255)' }}
+ />
+ <span>SECURED</span>
+ </div>
+ </div>
+ </div>
 
-        {/* Right Actions */}
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/50 text-emerald-800 dark:text-emerald-300 text-xs font-medium">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Signed in as {adminUser?.username || 'admin'}</span>
-          </div>
+ {/* Navigation Items */}
+ <div className="space-y-1 overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+ <div className="px-3 py-2 text-[10px] font-mono font-bold uppercase tracking-widest text-theme-text-muted select-none">
+ Navigation
+ </div>
+ {navItems.map((item) => {
+ const Icon = item.icon;
+ const isActive = activeTab === item.id;
+ return (
+ <button
+ key={item.id}
+ onClick={() => {
+ setActiveTab(item.id as AdminTab);
+ setMobileMenuOpen(false);
+ }}
+ className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium border duration-150 cursor-pointer select-none text-left ${
+ isActive
+ ?'border-[rgba(43,127,255,0.35)] bg-[rgba(43,127,255,0.12)] text-[rgb(43,127,255)] font-semibold shadow-xs'
+ :'border-transparent text-theme-text-secondary hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800/50'
+ }`}
+ >
+ <div className="flex items-center gap-3">
+ <Icon
+ className={`w-4 h-4 shrink-0 ${
+ isActive ?'text-[rgb(43,127,255)]' :'text-theme-text-muted'
+ }`}
+ />
+ <span>{item.label}</span>
+ </div>
 
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer shadow-xs"
-            title="Toggle theme"
-          >
-            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
+ {item.count && (
+ <span
+ className={`px-1.5 py-0.5 rounded text-[10px] font-mono border ${
+ isActive
+ ?'bg-[rgba(43,127,255,0.15)] text-[rgb(43,127,255)] border-[rgba(43,127,255,0.3)]'
+ :'bg-theme-bg dark:bg-zinc-800/80 text-theme-text-secondary border-theme-border dark:border-zinc-700/60'
+ }`}
+ >
+ {item.count}
+ </span>
+ )}
+ </button>
+ );
+ })}
+ </div>
+ </div>
 
-          <Link
-            to="/"
-            target="_blank"
-            className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors shadow-xs"
-          >
-            <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-            <span>Public Site</span>
-          </Link>
+ {/* User Card & Logout Button */}
+ <div className="shrink-0 pt-4 border-t border-theme-border space-y-3">
+ <div className="p-3 rounded-xl bg-theme-bg border border-theme-border">
+ <div className="text-xs font-bold text-theme-text font-mono truncate">
+ {adminUser?.username ||'admin'}
+ </div>
+ <div className="text-[10px] text-theme-text-muted font-mono">HttpOnly Protected</div>
+ </div>
 
-          <button
-            onClick={handleLogout}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-semibold transition-colors cursor-pointer border border-rose-200/60 dark:border-rose-900/40"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Sign Out</span>
-          </button>
-        </div>
-      </header>
+ <button
+ onClick={handleLogout}
+ className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/20 border border-rose-200 dark:border-rose-900/30 cursor-pointer"
+ >
+ <LogOut className="w-3.5 h-3.5" />
+ <span>Sign Out</span>
+ </button>
+ </div>
+ </aside>
 
-      {/* Main Layout Area */}
-      <div className="flex-1 flex w-full max-w-7xl mx-auto px-4 sm:px-8 py-8 gap-8">
-        {/* Desktop Sidebar */}
-        <aside className="hidden md:flex flex-col w-64 shrink-0 space-y-3 sticky top-24 self-start">
-          <div className="p-2.5 bg-white dark:bg-[#121215] rounded-3xl border border-slate-200/90 dark:border-zinc-800/90 shadow-sm space-y-1">
-            <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
-              Content &amp; Portfolio
-            </div>
-            {navItems.slice(0, 7).map(item => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id as AdminTab)}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs'
-                      : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon className="w-4 h-4" />
-                    <span>{item.label}</span>
-                  </div>
-                  {isActive && <ChevronRight className="w-3.5 h-3.5 opacity-60" />}
-                </button>
-              );
-            })}
+ {/* Main Viewport Container */}
+ <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
+ {/* Top Header Bar */}
+ <header className="h-16 shrink-0 px-6 sm:px-10 border-b border-theme-border bg-theme-card/95 dark:bg-[#07080a]/95 backdrop-blur-md flex items-center justify-between z-30">
+ <h2 className="text-sm sm:text-base font-bold font-['Syne',sans-serif] capitalize text-theme-text">
+ {activeTab ==='settings' ?'Security & State' : activeTab}
+ </h2>
 
-            <div className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500 border-t border-slate-100 dark:border-zinc-800/60">
-              Inquiries &amp; Settings
-            </div>
-            {navItems.slice(7).map(item => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id as AdminTab)}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs'
-                      : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-zinc-800/60 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon className="w-4 h-4" />
-                    <span>{item.label}</span>
-                  </div>
-                  {isActive && <ChevronRight className="w-3.5 h-3.5 opacity-60" />}
-                </button>
-              );
-            })}
-          </div>
-        </aside>
+ <div className="flex items-center gap-4 text-xs font-medium">
+ <Link
+ to="/"
+ target="_blank"
+ className="flex items-center gap-1.5 text-theme-text-secondary hover:text-slate-900 dark:hover:text-white"
+ >
+ <span>Live Site</span>
+ <ExternalLink className="w-3.5 h-3.5" />
+ </Link>
 
-        {/* Mobile Navigation Drawer */}
-        {mobileMenuOpen && (
-          <div className="fixed inset-0 z-50 md:hidden flex">
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-xs" onClick={() => setMobileMenuOpen(false)} />
-            <div className="relative w-4/5 max-w-xs bg-white dark:bg-[#121215] p-6 shadow-2xl z-10 flex flex-col justify-between h-full">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-zinc-800">
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">Admin Navigation</h3>
-                  <button onClick={() => setMobileMenuOpen(false)}>
-                    <X className="w-5 h-5 text-slate-400" />
-                  </button>
-                </div>
+ <button
+ onClick={toggleTheme}
+ className="p-2 text-theme-text-secondary hover:text-slate-900 dark:hover:text-white cursor-pointer rounded-xl hover:bg-slate-100 dark:hover:bg-zinc-800"
+ title="Toggle Theme"
+ >
+ {isDark ? (
+ <Sun className="w-4 h-4 text-amber-400" />
+ ) : (
+ <Moon className="w-4 h-4 text-theme-text-secondary" />
+ )}
+ </button>
+ </div>
+ </header>
 
-                <div className="space-y-1">
-                  {navItems.map(item => {
-                    const Icon = item.icon;
-                    const isActive = activeTab === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => {
-                          setActiveTab(item.id as AdminTab);
-                          setMobileMenuOpen(false);
-                        }}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                          isActive
-                            ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
-                            : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800'
-                        }`}
-                      >
-                        <Icon className="w-4 h-4" />
-                        <span>{item.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Dynamic Section Content */}
-        <main className="flex-1 min-w-0 pb-16">
-          {activeTab === 'profile' && <ProfileAdminSection />}
-          {activeTab === 'projects' && <ProjectsAdminSection />}
-          {activeTab === 'education' && <EducationAdminSection />}
-          {activeTab === 'experience' && <ExperienceAdminSection />}
-          {activeTab === 'skills' && <SkillsAdminSection />}
-          {activeTab === 'categories' && <SkillCategoriesAdminSection />}
-          {activeTab === 'media' && <MediaAdminSection />}
-          {activeTab === 'contact' && <ContactMessagesAdminSection />}
-          {activeTab === 'settings' && <SettingsAdminSection />}
-        </main>
-      </div>
-    </div>
-  );
+ {/* Dynamic Section Content Canvas */}
+ <main className="flex-1 overflow-y-auto p-6 sm:p-10 max-w-7xl w-full mx-auto">
+ {activeTab ==='overview' && (
+ <OverviewAdminSection onNavigate={(tab) => setActiveTab(tab)} />
+ )}
+ {activeTab ==='profile' && <ProfileAdminSection />}
+ {activeTab ==='skills' && <SkillsAdminSection />}
+ {activeTab ==='projects' && <ProjectsAdminSection />}
+ {activeTab ==='experience' && <ExperienceAdminSection />}
+ {activeTab ==='education' && <EducationAdminSection />}
+ {activeTab ==='media' && <MediaAdminSection />}
+ {activeTab ==='contact' && <ContactMessagesAdminSection />}
+ {activeTab ==='settings' && <SettingsAdminSection />}
+ </main>
+ </div>
+ </div>
+ );
 };

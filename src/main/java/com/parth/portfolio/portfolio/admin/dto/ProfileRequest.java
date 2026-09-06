@@ -45,6 +45,10 @@ public record ProfileRequest(
     @Size(max = 500) 
     String profileImageUrl,
 
+    Double yearsOfExperience,
+
+    Boolean showExperienceInProfile,
+
     boolean active
 ) {
 }

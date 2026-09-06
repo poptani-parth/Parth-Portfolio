@@ -43,6 +43,10 @@ public class SiteProfile {
 
     private String profileImageUrl;
 
+    private Double yearsOfExperience;
+
+    private Boolean showExperienceInProfile;
+
     @Builder.Default
     private boolean active = true;
 

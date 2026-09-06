@@ -15,6 +15,8 @@ public record AdminProfileResponse(
         String githubUrl,
         String linkedinUrl,
         String profileImageUrl,
+        Double yearsOfExperience,
+        Boolean showExperienceInProfile,
         boolean active,
         Instant createdAt,
         Instant updatedAt

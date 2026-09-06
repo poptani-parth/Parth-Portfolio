@@ -22,6 +22,10 @@ public record ProfileResponse(
 
         String linkedinUrl,
 
-        String profileImageUrl
+        String profileImageUrl,
+
+        Double yearsOfExperience,
+
+        Boolean showExperienceInProfile
 ) {
 }

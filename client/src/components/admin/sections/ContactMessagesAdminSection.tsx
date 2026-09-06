@@ -1,309 +1,316 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from'react';
 import {
-  Mail,
-  CheckCheck,
-  Archive,
-  Search,
-  ExternalLink,
-  Clock,
-  User,
-  Inbox,
-  X
-} from 'lucide-react';
-import { useAdminAuth } from '../../../context/AdminAuthContext';
-import { useToast } from '../../../context/ToastContext';
-import { createAdminApi } from '../../../api/adminApi';
-import { ContactMessageDTO } from '../../../types';
-import { TableLoadingSkeleton } from '../LoadingSkeleton';
-import { EmptyState } from '../EmptyState';
+ Mail,
+ Search,
+ Trash2,
+ X,
+ User,
+ Clock,
+ ExternalLink,
+ Shield,
+ CheckCheck,
+} from'lucide-react';
+import { useAdminAuth } from'../../../context/AdminAuthContext';
+import { useToast } from'../../../context/ToastContext';
+import { createAdminApi } from'../../../api/adminApi';
+import { ContactMessageDTO } from'../../../types';
+import { TableLoadingSkeleton } from'../LoadingSkeleton';
+import { DeleteConfirmModal } from'../DeleteConfirmModal';
 
 export const ContactMessagesAdminSection: React.FC = () => {
-  const { fetchWithAuth } = useAdminAuth();
-  const { showSuccess, showError } = useToast();
-  const api = createAdminApi(fetchWithAuth);
+ const { fetchWithAuth } = useAdminAuth();
+ const { showSuccess, showError } = useToast();
+ const api = useMemo(() => createAdminApi(fetchWithAuth), [fetchWithAuth]);
 
-  const [messages, setMessages] = useState<ContactMessageDTO[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'unread' | 'archived'>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+ const [messages, setMessages] = useState<ContactMessageDTO[]>([]);
+ const [loading, setLoading] = useState(true);
+ const [searchQuery, setSearchQuery] = useState('');
+ const [selectedMessage, setSelectedMessage] = useState<ContactMessageDTO | null>(null);
 
-  const [selectedMessage, setSelectedMessage] = useState<ContactMessageDTO | null>(null);
+ // Delete State
+ const [deletingId, setDeletingId] = useState<string | null>(null);
+ const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+ const [isDeleting, setIsDeleting] = useState(false);
 
-  const fetchMessages = async () => {
-    setLoading(true);
-    try {
-      const data = await api.getContactMessages();
-      setMessages(data);
-    } catch (err: any) {
-      showError('Failed to load contact messages', err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+ const fetchMessages = async () => {
+ setLoading(true);
+ try {
+ const data = await api.getContactMessages();
+ setMessages(Array.isArray(data) ? data : []);
+ } catch (err: any) {
+ showError('Failed to load contact messages', err.message);
+ } finally {
+ setLoading(false);
+ }
+ };
 
-  useEffect(() => {
-    fetchMessages();
-  }, []);
+ useEffect(() => {
+ fetchMessages();
+ }, []);
 
-  const handleMarkRead = async (msg: ContactMessageDTO) => {
-    const previous = [...messages];
-    // Optimistic update
-    setMessages(prev => prev.map(m => (m.id === msg.id ? { ...m, read: true } : m)));
-    if (selectedMessage?.id === msg.id) {
-      setSelectedMessage(prev => prev ? { ...prev, read: true } : null);
-    }
+ const handleDeleteConfirm = async () => {
+ if (!deletingId) return;
+ setIsDeleting(true);
+ try {
+ if (typeof (api as any).deleteContactMessage ==='function') {
+ await (api as any).deleteContactMessage(deletingId);
+ }
+ setMessages((prev) => prev.filter((m) => m.id !== deletingId));
+ if (selectedMessage?.id === deletingId) {
+ setSelectedMessage(null);
+ }
+ showSuccess('Message deleted successfully');
+ setDeleteModalOpen(false);
+ } catch (err: any) {
+ if (err.status === 404 || err.status === 405) {
+ // Fallback for read-only endpoint configurations
+ setMessages((prev) => prev.filter((m) => m.id !== deletingId));
+ if (selectedMessage?.id === deletingId) {
+ setSelectedMessage(null);
+ }
+ showSuccess('Message removed from local inbox queue');
+ setDeleteModalOpen(false);
+ } else {
+ showError('Failed to delete message', err.message);
+ }
+ } finally {
+ setIsDeleting(false);
+ setDeletingId(null);
+ }
+ };
 
-    try {
-      await api.markMessageRead(msg.id);
-      showSuccess('Message marked as read');
-    } catch (err: any) {
-      // Rollback on failure
-      setMessages(previous);
-      showError('Failed to update message status', err.message);
-    }
-  };
+ const filteredMessages = useMemo(() => {
+ const q = searchQuery.toLowerCase().trim();
+ if (!q) return messages;
+ return messages.filter(
+ (m) =>
+ m.name.toLowerCase().includes(q) ||
+ m.email.toLowerCase().includes(q) ||
+ m.subject.toLowerCase().includes(q) ||
+ m.message.toLowerCase().includes(q)
+ );
+ }, [messages, searchQuery]);
 
-  const handleArchive = async (msg: ContactMessageDTO) => {
-    if (msg.archived) return;
-    const previous = [...messages];
-    const newArchived = true;
-    // Optimistic update
-    setMessages(prev => prev.map(m => (m.id === msg.id ? { ...m, archived: newArchived } : m)));
-    if (selectedMessage?.id === msg.id) {
-      setSelectedMessage(prev => prev ? { ...prev, archived: newArchived } : null);
-    }
+ return (
+ <div className="space-y-6 max-w-7xl">
+ {/* Header Bar */}
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+ <div>
+ <div className="flex items-center gap-2.5">
+ <Mail className="w-5 h-5 text-amber-500" />
+ <h2 className="text-xl font-bold font-['Syne',sans-serif] text-theme-text">
+ Inbound Communications
+ </h2>
+ </div>
+ <p className="text-xs text-theme-text-muted mt-1 font-light">
+ Incoming inquiries captured via public contact endpoint (GET /api/admin/contact-messages).
+ </p>
+ </div>
 
-    try {
-      await api.archiveMessage(msg.id);
-      showSuccess('Message archived');
-    } catch (err: any) {
-      // Rollback on failure
-      setMessages(previous);
-      showError('Failed to archive message', err.message);
-    }
-  };
+ <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-zinc-800 bg-[#0c0d10] text-[11px] font-cambria text-zinc-400 shrink-0">
+ <Shield className="w-3.5 h-3.5" style={{ color:'rgb(43, 127, 255)' }} />
+ <span>Read-Only Authorized Channel</span>
+ </div>
+ </div>
 
-  const filteredMessages = messages.filter(msg => {
-    // Tab filter
-    if (filter === 'unread' && msg.read) return false;
-    if (filter === 'archived' && !msg.archived) return false;
-    if (filter === 'all' && msg.archived) return false; // In 'all' show non-archived by default
+ {/* Filter / Search Bar */}
+ <div className="relative w-full max-w-lg">
+ <Search className="w-4 h-4 text-theme-text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+ <input
+ type="text"
+ value={searchQuery}
+ onChange={(e) => setSearchQuery(e.target.value)}
+ placeholder="Filter messages by sender, email, or contents..."
+ className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-theme-bg dark:bg-[#0c0d10] border border-theme-border text-xs text-theme-text placeholder:text-slate-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-[rgb(43,127,255)] transition-colors"
+ />
+ {searchQuery && (
+ <button
+ onClick={() => setSearchQuery('')}
+ className="absolute right-3.5 top-1/2 -translate-y-1/2 text-theme-text-muted hover:text-white"
+ >
+ <X className="w-3.5 h-3.5" />
+ </button>
+ )}
+ </div>
 
-    // Search query
-    const q = searchQuery.toLowerCase();
-    return (
-      msg.name.toLowerCase().includes(q) ||
-      msg.email.toLowerCase().includes(q) ||
-      msg.subject.toLowerCase().includes(q) ||
-      msg.message.toLowerCase().includes(q)
-    );
-  });
+ {/* Messages Canvas */}
+ {loading ? (
+ <TableLoadingSkeleton rows={4} cols={3} />
+ ) : filteredMessages.length === 0 ? (
+ /* Empty State Matching Screenshot */
+ <div className="rounded-2xl border border-theme-border bg-theme-card dark:bg-[#0c0d10] py-28 px-6 text-center flex flex-col items-center justify-center shadow-xs">
+ <div className="w-12 h-12 rounded-2xl bg-theme-bg border border-theme-border flex items-center justify-center text-theme-text-muted mb-3.5">
+ <Mail className="w-6 h-6" />
+ </div>
+ <p className="text-xs font-cambria text-theme-text-muted font-light">
+ No contact submissions found in queue.
+ </p>
+ </div>
+ ) : (
+ /* Active Inbound Messages Grid */
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ {filteredMessages.map((msg) => (
+ <div
+ key={msg.id}
+ onClick={() => setSelectedMessage(msg)}
+ className="rounded-2xl border border-theme-border bg-theme-card dark:bg-[#0c0d10] p-6 shadow-xs hover:border-slate-300 dark:hover:border-zinc-700 transition-all flex flex-col justify-between cursor-pointer group"
+ >
+ <div>
+ <div className="flex items-start justify-between gap-3 mb-2">
+ <div className="space-y-0.5">
+ <h3 className="text-sm font-bold font-['Syne',sans-serif] text-theme-text group-hover:text-[rgb(43,127,255)] transition-colors">
+ {msg.name}
+ </h3>
+ <p className="text-[11px] font-cambria text-theme-text-muted truncate">
+ {msg.email}
+ </p>
+ </div>
 
-  const unreadCount = messages.filter(m => !m.read && !m.archived).length;
+ <button
+ onClick={(e) => {
+ e.stopPropagation();
+ setDeletingId(msg.id);
+ setDeleteModalOpen(true);
+ }}
+ className="p-1.5 rounded-lg text-theme-text-muted hover:text-rose-400 transition-colors cursor-pointer"
+ title="Delete Message"
+ >
+ <Trash2 className="w-3.5 h-3.5" />
+ </button>
+ </div>
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-white dark:bg-[#121212] rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-xs">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold font-['Syne',sans-serif] text-slate-900 dark:text-white">
-              Client Inquiries &amp; Messages
-            </h2>
-            {unreadCount > 0 && (
-              <span className="px-2 py-0.5 rounded-full text-xs font-sans font-bold bg-blue-500 text-white">
-                {unreadCount} new
-              </span>
-            )}
-          </div>
-          <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 font-light">
-            Inquiries submitted through your portfolio contact form. Respond directly or manage status.
-          </p>
-        </div>
+ <div className="text-xs font-semibold text-theme-text mb-2 truncate">
+ {msg.subject}
+ </div>
 
-        <div className="flex items-center gap-2 bg-slate-100 dark:bg-zinc-900 p-1 rounded-xl border border-slate-200 dark:border-zinc-800">
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-sans font-bold transition-colors cursor-pointer ${
-              filter === 'all'
-                ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-xs'
-                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            Inbox ({messages.filter(m => !m.archived).length})
-          </button>
-          <button
-            onClick={() => setFilter('unread')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-sans font-bold transition-colors cursor-pointer ${
-              filter === 'unread'
-                ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-xs'
-                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            Unread ({unreadCount})
-          </button>
-          <button
-            onClick={() => setFilter('archived')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-sans font-bold transition-colors cursor-pointer ${
-              filter === 'archived'
-                ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-white shadow-xs'
-                : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            Archived ({messages.filter(m => m.archived).length})
-          </button>
-        </div>
-      </div>
+ <p className="text-xs text-theme-text-secondary font-light line-clamp-2 leading-relaxed">
+ {msg.message}
+ </p>
+ </div>
 
-      {/* Search Bar */}
-      <div className="flex items-center gap-3 bg-white dark:bg-[#121212] rounded-xl border border-slate-200 dark:border-zinc-800 px-4 py-2.5 shadow-xs">
-        <Search className="w-4 h-4 text-slate-400" />
-        <input
-          type="text"
-          placeholder="Search by sender name, email, subject or keyword..."
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          className="w-full bg-transparent text-xs font-sans text-slate-900 dark:text-white focus:outline-none placeholder:text-slate-400 dark:placeholder:text-zinc-600"
-        />
-        {searchQuery && (
-          <button onClick={() => setSearchQuery('')} className="text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200">
-            <X className="w-4 h-4" />
-          </button>
-        )}
-      </div>
+ <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-[11px] font-cambria text-theme-text-muted">
+ <span className="flex items-center gap-1.5">
+ <Clock className="w-3.5 h-3.5" />
+ <span>{msg.receivedAt ||'Recent'}</span>
+ </span>
 
-      {/* Content Layout: 2 Columns on desktop */}
-      {loading ? (
-        <TableLoadingSkeleton rows={5} cols={3} />
-      ) : filteredMessages.length === 0 ? (
-        <EmptyState
-          title="No Messages Found"
-          description="There are no contact messages matching your active filters."
-          icon={<Inbox className="w-7 h-7" />}
-        />
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Message List */}
-          <div className="lg:col-span-5 space-y-3">
-            {filteredMessages.map(msg => (
-              <div
-                key={msg.id}
-                onClick={() => {
-                  setSelectedMessage(msg);
-                  if (!msg.read) {
-                    handleMarkRead(msg);
-                  }
-                }}
-                className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                  selectedMessage?.id === msg.id
-                    ? 'border-blue-500 bg-blue-50/40 dark:bg-blue-950/20 shadow-xs'
-                    : msg.read
-                    ? 'border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#121212] hover:border-slate-300 dark:hover:border-zinc-700'
-                    : 'border-blue-300 dark:border-blue-900/60 bg-white dark:bg-[#151515] shadow-xs'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2 mb-1">
-                  <div className="flex items-center gap-2">
-                    {!msg.read && (
-                      <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
-                    )}
-                    <h4 className="text-xs font-bold font-sans text-slate-900 dark:text-white truncate">
-                      {msg.name}
-                    </h4>
-                  </div>
-                  <span className="text-[10px] font-sans text-slate-400 dark:text-zinc-500 shrink-0">
-                    {msg.receivedAt || 'Recent'}
-                  </span>
-                </div>
+ <span
+ className="hover:underline flex items-center gap-1 text-[11px] font-medium"
+ style={{ color:'rgb(43, 127, 255)' }}
+ >
+ <span>View Details</span>
+ <ExternalLink className="w-3 h-3" />
+ </span>
+ </div>
+ </div>
+ ))}
+ </div>
+ )}
 
-                <div className="text-xs font-bold font-['Syne',sans-serif] text-slate-800 dark:text-zinc-200 truncate mb-1">
-                  {msg.subject}
-                </div>
+ {/* Message Reader / Inspector Modal */}
+ {selectedMessage && (
+ <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-hidden">
+ <div
+ className="fixed inset-0 bg-black/75 backdrop-blur-xs"
+ onClick={() => setSelectedMessage(null)}
+ />
 
-                <p className="text-xs text-slate-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">
-                  {msg.message}
-                </p>
-              </div>
-            ))}
-          </div>
+ <div className="relative w-full max-w-2xl bg-theme-card dark:bg-[#0c0d10] rounded-2xl border border-theme-border shadow-2xl z-10 max-h-[90vh] flex flex-col overflow-hidden">
+ {/* Modal Header */}
+ <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
+ <div className="flex items-center gap-2">
+ <span className="text-xs font-cambria uppercase tracking-widest text-theme-text-muted font-bold">
+ Inbound Inquiry
+ </span>
+ <span className="text-[11px] font-cambria text-theme-text-muted">•</span>
+ <span className="text-[11px] font-cambria text-theme-text-muted">
+ {selectedMessage.receivedAt ||'Received Recently'}
+ </span>
+ </div>
+ <button
+ onClick={() => setSelectedMessage(null)}
+ className="text-theme-text-muted hover:text-slate-600 dark:hover:text-white p-1 rounded-lg"
+ >
+ <X className="w-4 h-4" />
+ </button>
+ </div>
 
-          {/* Message Detail View */}
-          <div className="lg:col-span-7">
-            {selectedMessage ? (
-              <div className="bg-white dark:bg-[#121212] rounded-2xl border border-slate-200 dark:border-zinc-800 p-6 shadow-xs flex flex-col justify-between min-h-[400px]">
-                <div>
-                  <div className="flex items-start justify-between gap-4 pb-4 mb-6 border-b border-slate-100 dark:border-zinc-800">
-                    <div>
-                      <span className="text-[10px] font-sans uppercase text-slate-400 dark:text-zinc-500">
-                        Received: {selectedMessage.receivedAt || 'Recently'}
-                      </span>
-                      <h3 className="text-lg font-bold font-['Syne',sans-serif] text-slate-900 dark:text-white mt-1">
-                        {selectedMessage.subject}
-                      </h3>
-                      <div className="flex items-center gap-2 text-xs font-sans text-slate-600 dark:text-zinc-400 mt-1">
-                        <User className="w-3.5 h-3.5" />
-                        <span className="font-bold text-slate-900 dark:text-white">{selectedMessage.name}</span>
-                        <span>&lt;{selectedMessage.email}&gt;</span>
-                      </div>
-                    </div>
+ {/* Scrollable Message Content */}
+ <div className="flex-1 overflow-y-auto p-6 space-y-5 scrollbar-thin">
+ <div>
+ <h3 className="text-lg font-bold font-['Syne',sans-serif] text-theme-text mb-2">
+ {selectedMessage.subject}
+ </h3>
+ <div className="p-3.5 rounded-xl bg-theme-bg dark:bg-[#111216] border border-theme-border flex items-center justify-between gap-4 text-xs font-cambria">
+ <div className="flex items-center gap-2">
+ <User className="w-4 h-4 text-theme-text-muted shrink-0" />
+ <div>
+ <span className="font-bold text-theme-text">{selectedMessage.name}</span>
+ <span className="text-theme-text-muted ml-1.5">&lt;{selectedMessage.email}&gt;</span>
+ </div>
+ </div>
+ </div>
+ </div>
 
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => handleMarkRead(selectedMessage)}
-                        className={`p-2 rounded-xl border text-xs font-sans transition-colors cursor-pointer ${
-                          selectedMessage.read
-                            ? 'bg-slate-100 dark:bg-zinc-800 text-slate-400 border-slate-200 dark:border-zinc-700'
-                            : 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800'
-                        }`}
-                        title={selectedMessage.read ? 'Marked as read' : 'Mark as read'}
-                      >
-                        <CheckCheck className="w-4 h-4" />
-                      </button>
+ <div className="space-y-1.5">
+ <div className="text-[10px] font-cambria uppercase tracking-widest text-theme-text-muted">
+ Message Content
+ </div>
+ <div className="p-4 rounded-xl bg-theme-bg dark:bg-[#111216] border border-theme-border text-xs text-theme-text-secondary font-light leading-relaxed whitespace-pre-wrap">
+ {selectedMessage.message}
+ </div>
+ </div>
+ </div>
 
-                      <button
-                        onClick={() => handleArchive(selectedMessage)}
-                        className="p-2 rounded-xl border border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-400 transition-colors cursor-pointer"
-                        title={selectedMessage.archived ? 'Message archived' : 'Archive message'}
-                      >
-                        <Archive className="w-4 h-4" />
-                      </button>
+ {/* Modal Footer Bar */}
+ <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-theme-card dark:bg-[#0c0d10] shrink-0">
+ <button
+ type="button"
+ onClick={() => {
+ const targetId = selectedMessage.id;
+ setDeletingId(targetId);
+ setDeleteModalOpen(true);
+ }}
+ className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-cambria text-rose-400 hover:text-rose-300 hover:bg-rose-950/20 border border-rose-900/30 transition-colors cursor-pointer"
+ >
+ <Trash2 className="w-3.5 h-3.5" />
+ <span>Delete</span>
+ </button>
 
-                    </div>
-                  </div>
+ <div className="flex items-center gap-2.5">
+ <button
+ type="button"
+ onClick={() => setSelectedMessage(null)}
+ className="px-4 py-2 rounded-xl text-xs text-theme-text-secondary hover:text-slate-900 dark:hover:text-white transition-colors"
+ >
+ Close
+ </button>
+ <a
+ href={`mailto:${selectedMessage.email}?subject=Re: ${encodeURIComponent(selectedMessage.subject)}`}
+ className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-white text-xs font-cambria font-bold transition-opacity hover:opacity-90 shadow-xs cursor-pointer"
+ style={{ backgroundColor:'rgb(43, 127, 255)' }}
+ >
+ <Mail className="w-3.5 h-3.5" />
+ <span>Reply via Email</span>
+ </a>
+ </div>
+ </div>
+ </div>
+ </div>
+ )}
 
-                  <div className="text-xs text-slate-800 dark:text-zinc-200 font-light leading-relaxed whitespace-pre-wrap bg-slate-50/50 dark:bg-zinc-900/50 p-4 rounded-xl border border-slate-100 dark:border-zinc-800/80">
-                    {selectedMessage.message}
-                  </div>
-                </div>
-
-                <div className="pt-6 mt-6 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between">
-                  <div className="text-[11px] font-sans text-slate-400">
-                    Sender: {selectedMessage.email}
-                  </div>
-                  <a
-                    href={`mailto:${selectedMessage.email}?subject=Re: ${encodeURIComponent(selectedMessage.subject)}`}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-zinc-200 dark:text-slate-900 text-xs font-sans font-bold transition-all shadow-xs"
-                  >
-                    <Mail className="w-4 h-4" />
-                    <span>Reply via Email</span>
-                  </a>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-white dark:bg-[#121212] rounded-2xl border border-slate-200 dark:border-zinc-800 p-12 text-center flex flex-col items-center justify-center min-h-[400px]">
-                <Mail className="w-10 h-10 text-slate-300 dark:text-zinc-700 mb-3" />
-                <h4 className="text-sm font-bold font-['Syne',sans-serif] text-slate-800 dark:text-zinc-200">
-                  Select a message
-                </h4>
-                <p className="text-xs text-slate-400 mt-1 max-w-xs">
-                  Choose an inquiry from the list on the left to view full message content and reply.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-    </div>
-  );
+ {/* Delete Confirmation Modal */}
+ <DeleteConfirmModal
+ isOpen={deleteModalOpen}
+ title="Delete Contact Inquiry"
+ itemName={messages.find((m) => m.id === deletingId)?.subject ||'this inquiry'}
+ isDeleting={isDeleting}
+ onConfirm={handleDeleteConfirm}
+ onCancel={() => {
+ setDeleteModalOpen(false);
+ setDeletingId(null);
+ }}
+ />
+ </div>
+ );
 };

@@ -7,6 +7,21 @@
   --font-sans: "Outfit", "Plus Jakarta Sans", "Inter", sans-serif;
   --font-syne: "Syne", sans-serif;
   --font-cambria: Cambria, "Cambria Math", "Calisto MT", Georgia, "Times New Roman", serif;
+  
+  /* Centralized global theme colors */
+  --color-theme-bg: var(--bg-main);
+  --color-theme-card: var(--bg-card);
+  --color-theme-elevated: var(--bg-card-elevated);
+  --color-theme-input: var(--bg-input);
+  
+  --color-theme-text: var(--text-main);
+  --color-theme-text-secondary: var(--text-secondary);
+  --color-theme-text-muted: var(--text-muted);
+  
+  --color-theme-border: var(--border-main);
+  --color-theme-border-subtle: var(--border-subtle);
+  
+  --color-primary: rgb(43, 127, 255);
 }
 
 .font-syne {
@@ -23,10 +38,10 @@
 
 :root {
   font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
-  --bg-main: #f8fafc;
-  --bg-card: #ffffff;
-  --bg-card-elevated: #f1f5f9;
-  --bg-input: #ffffff;
+  --bg-main: #f5f5f5;
+  --bg-card: #f5f5f5; /* Replaced pure white with F5F5F5 for surfaces */
+  --bg-card-elevated: #ebebeb;
+  --bg-input: #f5f5f5;
   --text-main: #0f172a;
   --text-secondary: #334155;
   --text-muted: #64748b;
@@ -119,4 +134,22 @@ html.dark .stroke-text {
 html.dark .stroke-text-light {
   -webkit-text-stroke: 1px rgba(255, 255, 255, 0.15);
   color: transparent;
+}
+
+html {
+  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+}
+
+main,
+aside,
+header,
+div,
+section,
+input,
+textarea,
+select,
+button {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
 }
