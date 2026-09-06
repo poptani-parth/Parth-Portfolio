@@ -1,671 +1,2088 @@
-import React, { useState, useMemo, useEffect } from'react';
-import { motion, AnimatePresence } from'motion/react';
-import {
- Search,
- LayoutGrid,
- ListFilter,
- Sparkles,
- X,
- ChevronLeft,
- ChevronRight,
- Clock,
- Briefcase
-} from'lucide-react';
-import { SkillDTO, SkillCategoryDTO } from '../../types';
-import { TechIcon } from'../ui/TechIcons';
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
-export interface ExtendedSkillDTO extends SkillDTO {
+import {
+  Search,
+  LayoutGrid,
+  ListFilter,
+  Sparkles,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Briefcase,
+} from 'lucide-react';
+
+import {
+  motion,
+  AnimatePresence,
+} from 'motion/react';
+
+import {
+  SkillDTO,
+  SkillCategoryDTO,
+} from '../../types';
+
+import { TechIcon } from '../ui/TechIcons';
+
+/* ============================================================
+ * EXTENDED DTO
+ * ============================================================ */
+
+export interface ExtendedSkillDTO
+  extends SkillDTO {
   description?: string;
   tags?: string[];
   proficiencyPercent?: number;
   proficiencyLevel?: string;
-  yearsExperience?: number; // Aliased from yearsOfExperience or separate
+
+  /*
+   * Normalized by usePortfolioData.ts
+   */
+  yearsExperience?: number;
 }
+
+/* ============================================================
+ * PROPS
+ * ============================================================ */
 
 interface TechStackSectionProps {
   skills: ExtendedSkillDTO[];
   categories: SkillCategoryDTO[];
+
   selectedCategoryFilter?: string;
-  onFilterChange?: (category: string) => void;
+
+  onFilterChange?: (
+    category: string
+  ) => void;
 }
 
-export const TechStackSection: React.FC<TechStackSectionProps> = ({
- skills,
- categories,
- selectedCategoryFilter,
- onFilterChange
+/* ============================================================
+ * HELPERS
+ * ============================================================ */
+
+const normalize = (
+  value: unknown
+): string => {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase();
+};
+
+const getCategoryName = (
+  skill: ExtendedSkillDTO
+): string => {
+  const raw = skill as any;
+
+  /*
+   * category: "Languages"
+   */
+  if (
+    typeof raw.category ===
+    'string'
+  ) {
+    return raw.category.trim();
+  }
+
+  /*
+   * category: {
+   *   id: 1,
+   *   name: "Languages"
+   * }
+   */
+  if (
+    raw.category &&
+    typeof raw.category ===
+      'object'
+  ) {
+    return String(
+      raw.category.name ??
+        raw.category.categoryName ??
+        raw.category.title ??
+        ''
+    ).trim();
+  }
+
+  /*
+   * categoryName
+   */
+  if (
+    raw.categoryName != null
+  ) {
+    return String(
+      raw.categoryName
+    ).trim();
+  }
+
+  /*
+   * category_name
+   */
+  if (
+    raw.category_name != null
+  ) {
+    return String(
+      raw.category_name
+    ).trim();
+  }
+
+  return '';
+};
+
+const getExperienceYears = (
+  skill: ExtendedSkillDTO
+): number => {
+  const raw = skill as any;
+
+  const value =
+    raw.yearsExperience ??
+    raw.yearsOfExperience ??
+    raw.experienceYears ??
+    raw.experience ??
+    0;
+
+  const number = Number(value);
+
+  return Number.isFinite(number)
+    ? Math.max(0, number)
+    : 0;
+};
+
+const getProficiency = (
+  skill: ExtendedSkillDTO
+): number => {
+  const raw = skill as any;
+
+  const value =
+    raw.proficiencyPercent ??
+    raw.knowledgePercentage ??
+    raw.proficiency ??
+    raw.percentage ??
+    0;
+
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return 0;
+  }
+
+  return Math.min(
+    100,
+    Math.max(0, number)
+  );
+};
+
+const getOverview = (
+  skill: ExtendedSkillDTO
+): string => {
+  const raw = skill as any;
+
+  return String(
+    raw.description ??
+      raw.overview ??
+      ''
+  ).trim();
+};
+
+const getExperienceDisplay = (
+  skill: ExtendedSkillDTO
+): string => {
+  const years =
+    getExperienceYears(skill);
+
+  if (years <= 0) {
+    return 'Experience not set';
+  }
+
+  /*
+   * Display backend value exactly.
+   *
+   * No hard-coded fake experience.
+   */
+  if (
+    Number.isInteger(years)
+  ) {
+    return `${years}+ Yrs`;
+  }
+
+  return `${years}+ Yrs`;
+};
+
+/* ============================================================
+ * COMPONENT
+ * ============================================================ */
+
+export const TechStackSection: React.FC<
+  TechStackSectionProps
+> = ({
+  skills = [],
+  categories = [],
+  selectedCategoryFilter,
+  onFilterChange,
 }) => {
+  const [
+    activeCategory,
+    setActiveCategory,
+  ] = useState<string>(
+    selectedCategoryFilter ||
+      'ALL'
+  );
 
-  const [activeCategory, setActiveCategory] = useState<string>(selectedCategoryFilter || 'ALL');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [viewMode, setViewMode] = useState<'grid' | 'pills'>('pills');
-  const [selectedSkill, setSelectedSkill] = useState<ExtendedSkillDTO | null>(null);
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState('');
 
- // Pagination states
- const [currentPage, setCurrentPage] = useState<number>(1);
- const [pageSize, setPageSize] = useState<number>(18);
+  const [
+    viewMode,
+    setViewMode,
+  ] = useState<
+    'grid' | 'pills'
+  >('pills');
 
- // Sync external filter if provided
- useEffect(() => {
- if (selectedCategoryFilter) {
- setActiveCategory(selectedCategoryFilter);
- setCurrentPage(1);
- }
- }, [selectedCategoryFilter]);
+  const [
+    selectedSkill,
+    setSelectedSkill,
+  ] =
+    useState<ExtendedSkillDTO | null>(
+      null
+    );
 
-  // Helper to get realistic experience label
-  const getExperienceDisplay = (skill: ExtendedSkillDTO): string => {
-  if (skill.yearsExperience && skill.yearsExperience > 0) {
- return`${skill.yearsExperience}+ Yrs`;
- }
- const name = (skill.name || '').toLowerCase();
- if (
- name.includes('java') ||
- name.includes('spring') ||
- name.includes('oop') ||
- name.includes('sql') ||
- name.includes('dsa') ||
- name.includes('crud') ||
- name.includes('mvc')
- ) {
- return'4+ Yrs';
- }
- if (
- name.includes('mysql') ||
- name.includes('supabase') ||
- name.includes('mongo') ||
- name.includes('redis') ||
- name.includes('jwt') ||
- name.includes('rest') ||
- name.includes('git') ||
- name.includes('postman') ||
- name.includes('maven') ||
- name.includes('sdlc') ||
- name.includes('agile') ||
- name.includes('rbac') ||
- name.includes('css') ||
- name.includes('html')
- ) {
- return'3+ Yrs';
- }
- if (
- name.includes('claude') ||
- name.includes('chatgpt') ||
- name.includes('copilot') ||
- name.includes('ai') ||
- name.includes('python') ||
- name.includes('jsp') ||
- name.includes('php')
- ) {
- return'2+ Yrs';
- }
- return'3+ Yrs';
- };
+  const [
+    currentPage,
+    setCurrentPage,
+  ] = useState(1);
 
- // Extract unique category names from skills
- const categoryTabs = useMemo(() => {
- const counts: Record<string, number> = { ALL: skills.length };
- 
- skills.forEach((skill) => {
- const cat = skill.category ||'Other';
- counts[cat] = (counts[cat] || 0) + 1;
- });
+  const [
+    pageSize,
+    setPageSize,
+  ] = useState(18);
 
- const categoryList = categories.length > 0
- ? categories.map((c) => c.name)
- : Array.from(new Set(skills.map((s) => s.category).filter(Boolean) as string[]));
+  /* ==========================================================
+   * SYNC EXTERNAL FILTER
+   * ========================================================== */
 
- return [
- { id:'ALL', name:'All Technologies', count: skills.length },
- ...categoryList.map((catName) => ({
- id: catName,
- name: catName,
- count: counts[catName] || 0
- }))
- ];
- }, [skills, categories]);
+  useEffect(() => {
+    if (
+      selectedCategoryFilter
+    ) {
+      setActiveCategory(
+        selectedCategoryFilter
+      );
 
- // Filter skills based on tab and search
- const filteredSkills = useMemo(() => {
- return skills.filter((skill) => {
- const matchesCategory =
- activeCategory ==='ALL' ||
- (skill.category && skill.category.toLowerCase() === activeCategory.toLowerCase());
+      setCurrentPage(1);
+    }
+  }, [
+    selectedCategoryFilter,
+  ]);
 
- const matchesSearch =
- searchQuery.trim() ==='' ||
- skill.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
- skill.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
- skill.tags?.some((t) => t.toLowerCase().includes(searchQuery.toLowerCase())) ||
- skill.description?.toLowerCase().includes(searchQuery.toLowerCase());
+  /* ==========================================================
+   * DEBUG
+   * ========================================================== */
 
- return matchesCategory && matchesSearch;
- });
- }, [skills, activeCategory, searchQuery]);
+  useEffect(() => {
+    console.log(
+      '[TechStackSection] Skills:',
+      skills
+    );
 
- // Reset pagination when filter or search changes
- useEffect(() => {
- setCurrentPage(1);
- }, [activeCategory, searchQuery, pageSize]);
+    console.log(
+      '[TechStackSection] Categories:',
+      categories
+    );
+  }, [
+    skills,
+    categories,
+  ]);
 
- // Calculate paginated slice
- const totalPages = Math.ceil(filteredSkills.length / pageSize) || 1;
- const paginatedSkills = useMemo(() => {
- const start = (currentPage - 1) * pageSize;
- return filteredSkills.slice(start, start + pageSize);
- }, [filteredSkills, currentPage, pageSize]);
+  /* ==========================================================
+   * CATEGORY TABS
+   * ========================================================== */
 
- const startIndex = (currentPage - 1) * pageSize + 1;
- const endIndex = Math.min(currentPage * pageSize, filteredSkills.length);
+  const categoryTabs =
+    useMemo(() => {
+      const counts: Record<
+        string,
+        number
+      > = {
+        ALL: skills.length,
+      };
 
- const handleTabClick = (catId: string) => {
- setActiveCategory(catId);
- setCurrentPage(1);
- if (onFilterChange) {
- onFilterChange(catId);
- }
- };
+      skills.forEach(
+        (skill) => {
+          const category =
+            getCategoryName(skill);
 
- // Marquee items
- const marqueeKeywords = [
-'Spring Boot 3',
-'Java 21',
-'PostgreSQL',
-'Claude AI',
-'Supabase',
-'Redis Cache',
-'Kafka Streams',
-'RESTful APIs',
-'Docker',
-'IntelliJ IDEA',
-'DSA & OOP',
-'Maven Builds',
-'JWT Auth',
-'Postman'
- ];
+          if (!category) {
+            return;
+          }
 
- return (
- <section id="skills" className="py-24 bg-theme-card dark:bg-[#0c0c0e] relative overflow-hidden">
- 
- {/* Top Flowing Marquee Banner */}
- <div className="w-full overflow-hidden py-3 border-y border-slate-200/70 dark:border-zinc-800/70 bg-theme-bg/60 /40 mb-16 select-none">
- <div className="flex whitespace-nowrap animate-marquee">
- {[...marqueeKeywords, ...marqueeKeywords].map((item, idx) => (
- <span
- key={idx}
- className="mx-6 text-xs font-bold tracking-wider uppercase text-theme-text-muted flex items-center gap-2"
- >
- <TechIcon name={item} size={14} className="w-3.5 h-3.5" />
- <span>{item}</span>
- <span className="text-blue-400 ml-3">•</span>
- </span>
- ))}
- </div>
- </div>
+          const key =
+            normalize(category);
 
- <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
- 
- {/* Section Header */}
- <div className="mb-12 text-center max-w-3xl mx-auto">
- <motion.div
- initial={{ opacity: 0, y: 15 }}
- whileInView={{ opacity: 1, y: 0 }}
- viewport={{ once: true }}
- className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-blue-200 dark:border-blue-900/60 bg-blue-50/80 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-xs font-bold tracking-wide uppercase mb-4"
- >
- <Sparkles className="w-3.5 h-3.5" />
- <span>Interactive Tech Matrix</span>
- </motion.div>
+          counts[key] =
+            (counts[key] || 0) + 1;
+        }
+      );
 
- <motion.h2 
- initial={{ opacity: 0, y: 20 }}
- whileInView={{ opacity: 1, y: 0 }}
- viewport={{ once: true }}
- transition={{ delay: 0.1 }}
- className="text-4xl md:text-5xl lg:text-6xl font-bold font-['Syne',sans-serif] text-theme-text mb-4"
- >
- Skills & Tools
- </motion.h2>
+      /*
+       * Prefer backend-derived categories,
+       * but safely fall back to categories
+       * derived from skills.
+       */
+      const categoryNames =
+        categories.length > 0
+          ? categories
+              .map(
+                (category) =>
+                  category.name
+              )
+              .filter(Boolean)
+          : Array.from(
+              new Set(
+                skills
+                  .map(
+                    getCategoryName
+                  )
+                  .filter(Boolean)
+              )
+            );
 
- <motion.p 
- initial={{ opacity: 0, y: 20 }}
- whileInView={{ opacity: 1, y: 0 }}
- viewport={{ once: true }}
- transition={{ delay: 0.2 }}
- className="text-lg text-theme-text-secondary font-medium"
- >
- A comprehensive look at the languages, frameworks, databases, and developer tooling I utilize daily.
- </motion.p>
- </div>
+      const uniqueNames =
+        Array.from(
+          new Set(
+            categoryNames
+          )
+        );
 
- {/* Filter Controls & Search Bar */}
- <div className="mb-10 space-y-4">
- 
- {/* Top Bar: Search + View Mode Switcher */}
- <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
- 
- {/* Search Input */}
- <div className="relative w-full sm:w-80">
- <Search className="w-4 h-4 text-theme-text-muted absolute left-3.5 top-1/2 -translate-y-1/2" />
- <input
- type="text"
- value={searchQuery}
- onChange={(e) => setSearchQuery(e.target.value)}
- placeholder="Search tools, e.g. Spring, PostgreSQL, Claude..."
- className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-theme-border bg-theme-bg /70 text-theme-text placeholder-slate-400 dark:placeholder-zinc-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/40 focus:border-blue-400 transition-all"
- />
- {searchQuery && (
- <button
- onClick={() => setSearchQuery('')}
- className="absolute right-3 top-1/2 -translate-y-1/2 text-theme-text-muted hover:text-slate-600 dark:hover:text-zinc-200"
- >
- <X className="w-4 h-4" />
- </button>
- )}
- </div>
+      return [
+        {
+          id: 'ALL',
+          name: 'All Technologies',
+          count: skills.length,
+        },
 
- {/* View Mode Toggle & Results Count */}
- <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-4">
- <span className="text-xs font-semibold text-theme-text-muted">
- {filteredSkills.length > 0 ? (
- <>
- Showing <strong className="text-theme-text">{startIndex}-{endIndex}</strong> of {filteredSkills.length}
- </>
- ) : (
-'0 results'
- )}
- </span>
+        ...uniqueNames.map(
+          (name) => ({
+            id: name,
+            name,
+            count:
+              counts[
+                normalize(name)
+              ] || 0,
+          })
+        ),
+      ];
+    }, [
+      skills,
+      categories,
+    ]);
 
- {/* View Mode Buttons */}
- <div className="flex items-center p-1 rounded-xl bg-theme-bg border border-theme-border">
- <button
- onClick={() => setViewMode('pills')}
- className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
- viewMode ==='pills'
- ?'bg-theme-card dark:bg-zinc-800 text-theme-text shadow-sm'
- :'text-theme-text-muted hover:text-slate-900 dark:hover:text-white'
- }`}
- title="Compact Cloud View"
- >
- <ListFilter className="w-3.5 h-3.5" />
- <span className="inline">Compact Cloud</span>
- </button>
- <button
- onClick={() => setViewMode('grid')}
- className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
- viewMode ==='grid'
- ?'bg-theme-card dark:bg-zinc-800 text-theme-text shadow-sm'
- :'text-theme-text-muted hover:text-slate-900 dark:hover:text-white'
- }`}
- title="Detailed Grid View"
- >
- <LayoutGrid className="w-3.5 h-3.5" />
- <span className="inline">Detailed Grid</span>
- </button>
- </div>
- </div>
- </div>
+  /* ==========================================================
+   * FILTER
+   * ========================================================== */
 
- {/* Category Filter Pills (Horizontal Scroll on Mobile) */}
- <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
- {categoryTabs.map((tab) => {
- const isActive = activeCategory.toLowerCase() === tab.id.toLowerCase();
- return (
- <button
- key={tab.id}
- onClick={() => handleTabClick(tab.id)}
- className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
- isActive
- ?'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md scale-102'
- :'bg-theme-bg /80 text-theme-text-secondary border border-slate-200/80 hover:bg-slate-200/60 dark:hover:bg-zinc-800'
- }`}
- >
- <span>{tab.name}</span>
- <span
- className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
- isActive
- ?'bg-theme-card/20 text-white dark:bg-slate-900/20 dark:text-slate-900'
- :'bg-slate-200 dark:bg-zinc-800 text-theme-text-muted'
- }`}
- >
- {tab.count}
- </span>
- </button>
- );
- })}
- </div>
+  const filteredSkills =
+    useMemo(() => {
+      const search =
+        normalize(
+          searchQuery
+        );
 
- </div>
+      return skills.filter(
+        (skill) => {
+          const category =
+            getCategoryName(
+              skill
+            );
 
- {/* Empty Search State */}
- {filteredSkills.length === 0 && (
- <div className="text-center py-16 px-4 border border-dashed border-theme-border-subtle rounded-2xl bg-theme-bg/50 /20">
- <Search className="w-8 h-8 text-theme-text-muted mx-auto mb-3" />
- <h4 className="text-base font-bold text-theme-text mb-1">
- No matching technologies found
- </h4>
- <p className="text-xs text-theme-text-muted mb-4">
- Try searching with a different term or resetting the category filter.
- </p>
- <button
- onClick={() => {
- setSearchQuery('');
- setActiveCategory('ALL');
- }}
- className="px-4 py-2 rounded-lg bg-blue-500 text-white text-xs font-bold hover:bg-blue-600 transition-colors"
- >
- Reset Filters
- </button>
- </div>
- )}
+          const matchesCategory =
+            activeCategory ===
+              'ALL' ||
+            normalize(
+              category
+            ) ===
+              normalize(
+                activeCategory
+              );
 
- {/* VIEW MODE 1 (DEFAULT): Compact Interactive Stack Cloud */}
- {viewMode ==='pills' && filteredSkills.length > 0 && (
- <div className="py-4">
- <motion.div
- layout
- className="flex flex-wrap justify-center gap-3 py-4"
- >
- <AnimatePresence mode="popLayout">
- {paginatedSkills.map((skill, index) => {
- const expLabel = getExperienceDisplay(skill);
- return (
- <motion.div
- key={skill.id}
- layout
- initial={{ opacity: 0, scale: 0.92, y: 10 }}
- animate={{ opacity: 1, scale: 1, y: 0 }}
- exit={{ opacity: 0, scale: 0.92, y: -10 }}
- transition={{ duration: 0.2, delay: 0.015 * (index % 18) }}
- onClick={() => setSelectedSkill(skill)}
- className="group px-4 py-2.5 rounded-xl border border-theme-border bg-theme-bg/70 /70 hover:bg-white dark:hover:bg-zinc-800 hover:border-blue-400/80 dark:hover:border-blue-400/80 hover:shadow-md transition-all duration-200 flex items-center gap-2.5 cursor-pointer hover:-translate-y-0.5"
- >
- <div className="p-1 rounded-lg bg-theme-card dark:bg-zinc-800 border border-slate-200/60 dark:border-zinc-700/60 group-hover:scale-105 transition-transform">
- <TechIcon name={skill.name} size={16} className="w-4 h-4" />
- </div>
- 
- <span className="text-sm font-bold text-theme-text group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors">
- {skill.name}
- </span>
+          if (!matchesCategory) {
+            return false;
+          }
 
- {/* Display realistic experience tag rather than generic PRO */}
- <span className="text-[10px] font-semibold tracking-tight text-theme-text-muted px-2 py-0.5 rounded-full bg-slate-200/70 dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700/60 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:border-blue-300 dark:group-hover:border-blue-900/60 transition-colors">
- {expLabel}
- </span>
- </motion.div>
- );
- })}
- </AnimatePresence>
- </motion.div>
- </div>
- )}
+          if (!search) {
+            return true;
+          }
 
- {/* VIEW MODE 2: Detailed Interactive Grid */}
- {viewMode ==='grid' && filteredSkills.length > 0 && (
- <div className="py-4">
- <motion.div
- layout
- className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
- >
- <AnimatePresence mode="popLayout">
- {paginatedSkills.map((skill, index) => {
- const expLabel = getExperienceDisplay(skill);
- return (
- <motion.div
- key={skill.id}
- layout
- initial={{ opacity: 0, scale: 0.95 }}
- animate={{ opacity: 1, scale: 1 }}
- exit={{ opacity: 0, scale: 0.95 }}
- transition={{ duration: 0.25, delay: 0.02 * (index % 12) }}
- onClick={() => setSelectedSkill(skill)}
- className="group relative p-5 rounded-2xl border border-slate-200/90 bg-theme-bg/40 dark:bg-[#121214] hover:bg-white dark:hover:bg-[#18181c] hover:border-blue-400/60 dark:hover:border-blue-400/60 transition-all duration-200 hover:-translate-y-1 hover:shadow-md cursor-pointer flex flex-col justify-between"
- >
- <div>
- {/* Top Row: Tech Icon + Category + Experience */}
- <div className="flex items-start justify-between gap-3 mb-3.5">
- <div className="p-2.5 rounded-xl bg-theme-card dark:bg-zinc-800/90 border border-slate-200/60 dark:border-zinc-700/60 shadow-xs group-hover:scale-110 transition-transform">
- <TechIcon name={skill.name} size={22} className="w-5 h-5" />
- </div>
+          const name =
+            normalize(
+              skill.name
+            );
 
- <div className="flex flex-col items-end gap-1">
- <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400">
- {expLabel}
- </span>
- {skill.category && (
- <span className="text-[10px] text-theme-text-muted font-medium">
- {skill.category}
- </span>
- )}
- </div>
- </div>
+          const overview =
+            normalize(
+              getOverview(
+                skill
+              )
+            );
 
- {/* Skill Name */}
- <h3 className="text-lg font-bold text-theme-text mb-2 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors">
- {skill.name}
- </h3>
+          const tags =
+            Array.isArray(
+              (skill as any)
+                .tags
+            )
+              ? (
+                  (skill as any)
+                    .tags as string[]
+                )
+                  .map(normalize)
+                  .join(' ')
+              : '';
 
- {/* Description */}
- <p className="text-xs text-theme-text-secondary line-clamp-2 leading-relaxed mb-4">
- {skill.description ||`Core expertise and production implementation using ${skill.name}.`}
- </p>
- </div>
+          return (
+            name.includes(search) ||
+            normalize(
+              category
+            ).includes(search) ||
+            overview.includes(
+              search
+            ) ||
+            tags.includes(search)
+          );
+        }
+      );
+    }, [
+      skills,
+      activeCategory,
+      searchQuery,
+    ]);
 
- {/* Bottom: Tags + Experience Meter */}
- <div>
- {skill.tags && skill.tags.length > 0 && (
- <div className="flex flex-wrap gap-1 mb-3">
- {skill.tags.slice(0, 3).map((tag, tIdx) => (
- <span
- key={tIdx}
- className="text-[10px] font-medium px-2 py-0.5 rounded bg-theme-bg dark:bg-zinc-800/60 text-theme-text-secondary"
- >
- {tag}
- </span>
- ))}
- </div>
- )}
+  /* ==========================================================
+   * PAGINATION
+   * ========================================================== */
 
- {/* Progress Bar */}
- <div className="w-full pt-2 border-t border-slate-100 dark:border-zinc-800/60 flex items-center justify-between">
- <span className="text-[10px] font-semibold text-theme-text-muted">
- {expLabel} Experience
- </span>
- <div className="w-20 bg-slate-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
- <div
- className="bg-blue-400 h-full rounded-full"
- style={{ width:`${skill.proficiencyPercent || 90}%` }}
- />
- </div>
- </div>
- </div>
- </motion.div>
- );
- })}
- </AnimatePresence>
- </motion.div>
- </div>
- )}
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    activeCategory,
+    searchQuery,
+    pageSize,
+  ]);
 
- {/* Pagination Bar */}
- {filteredSkills.length > 0 && (
- <div className="mt-10 pt-6 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-4">
- 
- {/* Page Size Selector */}
- <div className="flex items-center gap-2 text-xs font-semibold text-theme-text-muted">
- <span>Show per page:</span>
- {[12, 18, 24, 36].map((size) => (
- <button
- key={size}
- onClick={() => setPageSize(size)}
- className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
- pageSize === size
- ?'bg-blue-400 text-slate-950 font-bold shadow-xs'
- :'bg-theme-bg text-theme-text-secondary hover:bg-slate-200 dark:hover:bg-zinc-800'
- }`}
- >
- {size}
- </button>
- ))}
- </div>
+  const totalPages =
+    Math.max(
+      1,
+      Math.ceil(
+        filteredSkills.length /
+          pageSize
+      )
+    );
 
- {/* Pagination Controls */}
- {totalPages > 1 && (
- <div className="flex items-center gap-1.5">
- <button
- onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
- disabled={currentPage === 1}
- className="p-2 rounded-xl border border-theme-border bg-theme-card text-theme-text-secondary disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
- title="Previous Page"
- >
- <ChevronLeft className="w-4 h-4" />
- </button>
+  /*
+   * Prevent invalid page after
+   * filtering/deleting skills.
+   */
+  useEffect(() => {
+    if (
+      currentPage >
+      totalPages
+    ) {
+      setCurrentPage(
+        totalPages
+      );
+    }
+  }, [
+    currentPage,
+    totalPages,
+  ]);
 
- <div className="flex items-center gap-1">
- {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
- const isCurrent = pageNum === currentPage;
- return (
- <button
- key={pageNum}
- onClick={() => setCurrentPage(pageNum)}
- className={`w-8 h-8 rounded-xl text-xs font-bold transition-all cursor-pointer ${
- isCurrent
- ?'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-sm'
- :'bg-theme-card text-theme-text-secondary border border-theme-border hover:bg-slate-100 dark:hover:bg-zinc-800'
- }`}
- >
- {pageNum}
- </button>
- );
- })}
- </div>
+  const paginatedSkills =
+    useMemo(() => {
+      const start =
+        (currentPage - 1) *
+        pageSize;
 
- <button
- onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
- disabled={currentPage === totalPages}
- className="p-2 rounded-xl border border-theme-border bg-theme-card text-theme-text-secondary disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors"
- title="Next Page"
- >
- <ChevronRight className="w-4 h-4" />
- </button>
- </div>
- )}
+      return filteredSkills.slice(
+        start,
+        start + pageSize
+      );
+    }, [
+      filteredSkills,
+      currentPage,
+      pageSize,
+    ]);
 
- {/* Page Status indicator */}
- <div className="text-xs font-medium text-theme-text-muted">
- Page {currentPage} of {totalPages}
- </div>
+  const startIndex =
+    filteredSkills.length ===
+    0
+      ? 0
+      : (currentPage - 1) *
+          pageSize +
+        1;
 
- </div>
- )}
+  const endIndex = Math.min(
+    currentPage * pageSize,
+    filteredSkills.length
+  );
 
- </div>
+  /* ==========================================================
+   * TAB HANDLER
+   * ========================================================== */
 
- {/* Skill Inspection Modal */}
- <AnimatePresence>
- {selectedSkill && (
- <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
- <motion.div
- initial={{ opacity: 0, scale: 0.95, y: 20 }}
- animate={{ opacity: 1, scale: 1, y: 0 }}
- exit={{ opacity: 0, scale: 0.95, y: 20 }}
- className="relative w-full max-w-lg p-6 sm:p-8 rounded-2xl border border-theme-border bg-theme-card dark:bg-[#121214] shadow-2xl"
- >
- {/* Close Button */}
- <button
- onClick={() => setSelectedSkill(null)}
- className="absolute right-5 top-5 p-2 rounded-xl text-theme-text-muted hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
- >
- <X className="w-5 h-5" />
- </button>
+  const handleTabClick = (
+    category: string
+  ) => {
+    setActiveCategory(
+      category
+    );
 
- {/* Modal Header */}
- <div className="flex items-center gap-4 mb-6">
- <div className="p-3.5 rounded-2xl bg-theme-bg dark:bg-zinc-800 border border-theme-border shadow-sm">
- <TechIcon name={selectedSkill.name} size={32} className="w-8 h-8" />
- </div>
- <div>
- <div className="flex items-center gap-2 mb-1">
- <span className="text-xs font-semibold uppercase tracking-wider text-theme-text-muted">
- {selectedSkill.category ||'Technology'}
- </span>
- <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400">
- {getExperienceDisplay(selectedSkill)} Experience
- </span>
- </div>
- <h3 className="text-2xl font-bold font-['Syne',sans-serif] text-theme-text">
- {selectedSkill.name}
- </h3>
- </div>
- </div>
+    setCurrentPage(1);
 
- {/* Modal Content */}
- <div className="space-y-4 mb-8">
- <div>
- <h4 className="text-xs font-bold uppercase tracking-wider text-theme-text-muted mb-1.5">
- Overview & Use Case
- </h4>
- <p className="text-sm text-theme-text-secondary leading-relaxed">
- {selectedSkill.description ||
-`Production implementation and architecture with ${selectedSkill.name}, optimizing for reliability, throughput, and clean maintainable code.`}
- </p>
- </div>
+    onFilterChange?.(
+      category
+    );
+  };
 
- {selectedSkill.tags && selectedSkill.tags.length > 0 && (
- <div>
- <h4 className="text-xs font-bold uppercase tracking-wider text-theme-text-muted mb-2">
- Key Competencies & Patterns
- </h4>
- <div className="flex flex-wrap gap-1.5">
- {selectedSkill.tags.map((tag, idx) => (
- <span
- key={idx}
- className="text-xs font-medium px-2.5 py-1 rounded-lg bg-theme-bg dark:bg-zinc-800 text-theme-text border border-slate-200/60"
- >
- {tag}
- </span>
- ))}
- </div>
- </div>
- )}
+  /* ==========================================================
+   * MARQUEE
+   *
+   * Visual-only content.
+   * It does NOT control actual skill data.
+   * ========================================================== */
 
- <div className="p-4 rounded-xl bg-theme-bg /80 border border-slate-200/80 grid grid-cols-2 gap-4">
- <div>
- <div className="text-[10px] uppercase font-bold text-theme-text-muted flex items-center gap-1.5">
- <Clock className="w-3.5 h-3.5" />
- Experience
- </div>
- <div className="text-base font-bold text-theme-text">
- {getExperienceDisplay(selectedSkill)}
- </div>
- </div>
- <div>
- <div className="text-[10px] uppercase font-bold text-theme-text-muted flex items-center gap-1.5">
- <Briefcase className="w-3.5 h-3.5" />
- Proficiency Level
- </div>
- <div className="text-base font-bold text-blue-500 dark:text-blue-400">
- {selectedSkill.proficiencyLevel ||'Expert'}
- </div>
- </div>
- </div>
- </div>
+  const marqueeKeywords = [
+    'Spring Boot',
+    'Java',
+    'PostgreSQL',
+    'Claude AI',
+    'Supabase',
+    'Redis',
+    'RESTful APIs',
+    'Docker',
+    'Maven',
+    'JWT',
+    'Postman',
+  ];
 
- {/* Modal Actions */}
- <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
- <a
- href="#projects"
- onClick={() => setSelectedSkill(null)}
- className="px-5 py-2.5 rounded-xl bg-blue-400 hover:bg-blue-500 text-slate-950 font-bold text-xs transition-colors"
- >
- View Related Projects
- </a>
- </div>
- </motion.div>
- </div>
- )}
- </AnimatePresence>
+  /* ==========================================================
+   * RENDER
+   * ========================================================== */
 
- </section>
- );
+  return (
+    <section
+      id="skills"
+      className="
+        py-24
+        bg-theme-card
+        dark:bg-[#0c0c0e]
+        relative
+        overflow-hidden
+      "
+    >
+      {/* ======================================================
+          MARQUEE
+      ====================================================== */}
+
+      <div
+        className="
+          w-full
+          overflow-hidden
+          py-3
+          border-y
+          border-slate-200/70
+          dark:border-zinc-800/70
+          bg-theme-bg/60
+          mb-16
+          select-none
+        "
+      >
+        <div className="flex whitespace-nowrap animate-marquee">
+          {[
+            ...marqueeKeywords,
+            ...marqueeKeywords,
+          ].map(
+            (
+              item,
+              index
+            ) => (
+              <span
+                key={`${item}-${index}`}
+                className="
+                  mx-6
+                  text-xs
+                  font-bold
+                  tracking-wider
+                  uppercase
+                  text-theme-text-muted
+                  flex
+                  items-center
+                  gap-2
+                "
+              >
+                <TechIcon
+                  name={item}
+                  size={14}
+                  className="w-3.5 h-3.5"
+                />
+
+                <span>
+                  {item}
+                </span>
+
+                <span className="text-blue-400 ml-3">
+                  •
+                </span>
+              </span>
+            )
+          )}
+        </div>
+      </div>
+
+      {/* ======================================================
+          MAIN CONTAINER
+      ====================================================== */}
+
+      <div
+        className="
+          max-w-7xl
+          mx-auto
+          px-4
+          sm:px-6
+          lg:px-8
+        "
+      >
+        {/* ====================================================
+            HEADER
+        ==================================================== */}
+
+        <div className="
+          mb-12
+          text-center
+          max-w-3xl
+          mx-auto
+        ">
+          <motion.div
+            initial={{
+              opacity: 0,
+              y: 15,
+            }}
+            whileInView={{
+              opacity: 1,
+              y: 0,
+            }}
+            viewport={{
+              once: true,
+            }}
+            className="
+              inline-flex
+              items-center
+              gap-2
+              px-3.5
+              py-1.5
+              rounded-full
+              border
+              border-blue-200
+              dark:border-blue-900/60
+              bg-blue-50/80
+              dark:bg-blue-950/40
+              text-blue-600
+              dark:text-blue-400
+              text-xs
+              font-bold
+              tracking-wide
+              uppercase
+              mb-4
+            "
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+
+            <span>
+              Interactive Tech Matrix
+            </span>
+          </motion.div>
+
+          <motion.h2
+            initial={{
+              opacity: 0,
+              y: 20,
+            }}
+            whileInView={{
+              opacity: 1,
+              y: 0,
+            }}
+            viewport={{
+              once: true,
+            }}
+            transition={{
+              delay: 0.1,
+            }}
+            className="
+              text-4xl
+              md:text-5xl
+              lg:text-6xl
+              font-bold
+              font-['Syne',sans-serif]
+              text-theme-text
+              mb-4
+            "
+          >
+            Skills & Tools
+          </motion.h2>
+
+          <motion.p
+            initial={{
+              opacity: 0,
+              y: 20,
+            }}
+            whileInView={{
+              opacity: 1,
+              y: 0,
+            }}
+            viewport={{
+              once: true,
+            }}
+            transition={{
+              delay: 0.2,
+            }}
+            className="
+              text-lg
+              text-theme-text-secondary
+              font-medium
+            "
+          >
+            A comprehensive look at
+            the languages, frameworks,
+            databases, and developer
+            tooling I utilize daily.
+          </motion.p>
+        </div>
+
+        {/* ====================================================
+            CONTROLS
+        ==================================================== */}
+
+        <div className="mb-10 space-y-4">
+          <div
+            className="
+              flex
+              flex-col
+              sm:flex-row
+              items-center
+              justify-between
+              gap-4
+            "
+          >
+            {/* SEARCH */}
+
+            <div
+              className="
+                relative
+                w-full
+                sm:w-80
+              "
+            >
+              <Search
+                className="
+                  w-4
+                  h-4
+                  text-theme-text-muted
+                  absolute
+                  left-3.5
+                  top-1/2
+                  -translate-y-1/2
+                "
+              />
+
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(event) =>
+                  setSearchQuery(
+                    event.target.value
+                  )
+                }
+                placeholder="
+                  Search tools, e.g. Java,
+                  Spring, PostgreSQL...
+                "
+                className="
+                  w-full
+                  pl-10
+                  pr-10
+                  py-2.5
+                  rounded-xl
+                  border
+                  border-theme-border
+                  bg-theme-bg
+                  text-theme-text
+                  text-sm
+                  placeholder-slate-400
+                  dark:placeholder-zinc-500
+                  focus:outline-none
+                  focus:ring-2
+                  focus:ring-blue-400/40
+                  focus:border-blue-400
+                  transition-all
+                "
+              />
+
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSearchQuery('')
+                  }
+                  className="
+                    absolute
+                    right-3
+                    top-1/2
+                    -translate-y-1/2
+                    text-theme-text-muted
+                  "
+                  aria-label="Clear search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* RESULT COUNT + VIEW */}
+
+            <div
+              className="
+                flex
+                items-center
+                justify-between
+                sm:justify-end
+                w-full
+                sm:w-auto
+                gap-4
+              "
+            >
+              <span
+                className="
+                  text-xs
+                  font-semibold
+                  text-theme-text-muted
+                "
+              >
+                {filteredSkills.length >
+                0 ? (
+                  <>
+                    Showing{' '}
+                    <strong className="text-theme-text">
+                      {startIndex}-
+                      {endIndex}
+                    </strong>{' '}
+                    of{' '}
+                    {
+                      filteredSkills.length
+                    }
+                  </>
+                ) : (
+                  '0 results'
+                )}
+              </span>
+
+              <div
+                className="
+                  flex
+                  items-center
+                  p-1
+                  rounded-xl
+                  bg-theme-bg
+                  border
+                  border-theme-border
+                "
+              >
+                <button
+                  type="button"
+                  onClick={() =>
+                    setViewMode(
+                      'pills'
+                    )
+                  }
+                  className={`
+                    flex
+                    items-center
+                    gap-1.5
+                    px-3
+                    py-1.5
+                    rounded-lg
+                    text-xs
+                    font-bold
+                    transition-all
+                    ${
+                      viewMode ===
+                      'pills'
+                        ? 'bg-theme-card dark:bg-zinc-800 text-theme-text shadow-sm'
+                        : 'text-theme-text-muted'
+                    }
+                  `}
+                >
+                  <ListFilter className="w-3.5 h-3.5" />
+
+                  <span>
+                    Compact Cloud
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setViewMode(
+                      'grid'
+                    )
+                  }
+                  className={`
+                    flex
+                    items-center
+                    gap-1.5
+                    px-3
+                    py-1.5
+                    rounded-lg
+                    text-xs
+                    font-bold
+                    transition-all
+                    ${
+                      viewMode ===
+                      'grid'
+                        ? 'bg-theme-card dark:bg-zinc-800 text-theme-text shadow-sm'
+                        : 'text-theme-text-muted'
+                    }
+                  `}
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+
+                  <span>
+                    Detailed Grid
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ==================================================
+              CATEGORY FILTERS
+          ================================================== */}
+
+          <div
+            className="
+              flex
+              items-center
+              gap-2
+              overflow-x-auto
+              pb-2
+              scrollbar-none
+            "
+          >
+            {categoryTabs.map(
+              (tab) => {
+                const isActive =
+                  normalize(
+                    activeCategory
+                  ) ===
+                  normalize(
+                    tab.id
+                  );
+
+                return (
+                  <button
+                    type="button"
+                    key={tab.id}
+                    onClick={() =>
+                      handleTabClick(
+                        tab.id
+                      )
+                    }
+                    className={`
+                      shrink-0
+                      flex
+                      items-center
+                      gap-2
+                      px-4
+                      py-2
+                      rounded-xl
+                      text-xs
+                      font-bold
+                      transition-all
+                      cursor-pointer
+                      ${
+                        isActive
+                          ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md'
+                          : 'bg-theme-bg text-theme-text-secondary border border-theme-border hover:bg-slate-200/60 dark:hover:bg-zinc-800'
+                      }
+                    `}
+                  >
+                    <span>
+                      {tab.name}
+                    </span>
+
+                    <span
+                      className={`
+                        px-1.5
+                        py-0.5
+                        rounded-md
+                        text-[10px]
+                        font-bold
+                        ${
+                          isActive
+                            ? 'bg-white/20 dark:bg-slate-900/20'
+                            : 'bg-slate-200 dark:bg-zinc-800 text-theme-text-muted'
+                        }
+                      `}
+                    >
+                      {tab.count}
+                    </span>
+                  </button>
+                );
+              }
+            )}
+          </div>
+        </div>
+
+        {/* ====================================================
+            EMPTY STATE
+        ==================================================== */}
+
+        {filteredSkills.length ===
+          0 && (
+          <div
+            className="
+              text-center
+              py-16
+              px-4
+              border
+              border-dashed
+              border-theme-border
+              rounded-2xl
+              bg-theme-bg/50
+            "
+          >
+            <Search
+              className="
+                w-8
+                h-8
+                text-theme-text-muted
+                mx-auto
+                mb-3
+              "
+            />
+
+            <h4
+              className="
+                text-base
+                font-bold
+                text-theme-text
+                mb-1
+              "
+            >
+              No matching technologies
+              found
+            </h4>
+
+            <p
+              className="
+                text-xs
+                text-theme-text-muted
+                mb-4
+              "
+            >
+              Try searching with a
+              different term or resetting
+              the category filter.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                setActiveCategory(
+                  'ALL'
+                );
+
+                onFilterChange?.(
+                  'ALL'
+                );
+              }}
+              className="
+                px-4
+                py-2
+                rounded-lg
+                bg-blue-500
+                text-white
+                text-xs
+                font-bold
+                hover:bg-blue-600
+                transition-colors
+              "
+            >
+              Reset Filters
+            </button>
+          </div>
+        )}
+
+        {/* ====================================================
+            COMPACT CLOUD
+        ==================================================== */}
+
+        {viewMode ===
+          'pills' &&
+          filteredSkills.length >
+            0 && (
+            <div className="py-4">
+              <motion.div
+                layout
+                className="
+                  flex
+                  flex-wrap
+                  justify-center
+                  gap-3
+                  py-4
+                "
+              >
+                <AnimatePresence
+                  mode="popLayout"
+                >
+                  {paginatedSkills.map(
+                    (
+                      skill,
+                      index
+                    ) => {
+                      const experience =
+                        getExperienceDisplay(
+                          skill
+                        );
+
+                      return (
+                        <motion.button
+                          type="button"
+                          key={
+                            skill.id ??
+                            `${skill.name}-${index}`
+                          }
+                          layout
+                          initial={{
+                            opacity: 0,
+                            scale: 0.92,
+                            y: 10,
+                          }}
+                          animate={{
+                            opacity: 1,
+                            scale: 1,
+                            y: 0,
+                          }}
+                          exit={{
+                            opacity: 0,
+                            scale: 0.92,
+                            y: -10,
+                          }}
+                          transition={{
+                            duration:
+                              0.2,
+                            delay:
+                              0.015 *
+                              (index %
+                                18),
+                          }}
+                          onClick={() =>
+                            setSelectedSkill(
+                              skill
+                            )
+                          }
+                          className="
+                            group
+                            px-4
+                            py-2.5
+                            rounded-xl
+                            border
+                            border-theme-border
+                            bg-theme-bg
+                            hover:bg-white
+                            dark:hover:bg-zinc-800
+                            hover:border-blue-400/80
+                            hover:shadow-md
+                            transition-all
+                            duration-200
+                            flex
+                            items-center
+                            gap-2.5
+                            cursor-pointer
+                            hover:-translate-y-0.5
+                          "
+                        >
+                          <div
+                            className="
+                              p-1
+                              rounded-lg
+                              bg-theme-card
+                              dark:bg-zinc-800
+                              border
+                              border-slate-200/60
+                              dark:border-zinc-700/60
+                            "
+                          >
+                            <TechIcon
+                              name={
+                                skill.name
+                              }
+                              size={16}
+                              className="w-4 h-4"
+                            />
+                          </div>
+
+                          <span
+                            className="
+                              text-sm
+                              font-bold
+                              text-theme-text
+                              group-hover:text-blue-500
+                              dark:group-hover:text-blue-400
+                              transition-colors
+                            "
+                          >
+                            {
+                              skill.name
+                            }
+                          </span>
+
+                          <span
+                            className="
+                              text-[10px]
+                              font-semibold
+                              tracking-tight
+                              text-theme-text-muted
+                              px-2
+                              py-0.5
+                              rounded-full
+                              bg-slate-200/70
+                              dark:bg-zinc-800
+                              border
+                              border-slate-200/80
+                              dark:border-zinc-700/60
+                            "
+                          >
+                            {
+                              experience
+                            }
+                          </span>
+                        </motion.button>
+                      );
+                    }
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            </div>
+          )}
+
+        {/* ====================================================
+            DETAILED GRID
+        ==================================================== */}
+
+        {viewMode ===
+          'grid' &&
+          filteredSkills.length >
+            0 && (
+            <div className="py-4">
+              <motion.div
+                layout
+                className="
+                  grid
+                  grid-cols-1
+                  sm:grid-cols-2
+                  lg:grid-cols-3
+                  xl:grid-cols-4
+                  gap-4
+                "
+              >
+                <AnimatePresence
+                  mode="popLayout"
+                >
+                  {paginatedSkills.map(
+                    (
+                      skill,
+                      index
+                    ) => {
+                      const proficiency =
+                        getProficiency(
+                          skill
+                        );
+
+                      const experience =
+                        getExperienceDisplay(
+                          skill
+                        );
+
+                      const overview =
+                        getOverview(
+                          skill
+                        );
+
+                      const category =
+                        getCategoryName(
+                          skill
+                        );
+
+                      return (
+                        <motion.button
+                          type="button"
+                          key={
+                            skill.id ??
+                            `${skill.name}-${index}`
+                          }
+                          layout
+                          initial={{
+                            opacity: 0,
+                            scale: 0.95,
+                          }}
+                          animate={{
+                            opacity: 1,
+                            scale: 1,
+                          }}
+                          exit={{
+                            opacity: 0,
+                            scale: 0.95,
+                          }}
+                          transition={{
+                            duration:
+                              0.25,
+                          }}
+                          onClick={() =>
+                            setSelectedSkill(
+                              skill
+                            )
+                          }
+                          className="
+                            text-left
+                            group
+                            p-5
+                            rounded-2xl
+                            border
+                            border-theme-border
+                            bg-theme-bg
+                            hover:bg-white
+                            dark:hover:bg-zinc-900
+                            hover:border-blue-400/60
+                            hover:shadow-lg
+                            transition-all
+                            duration-300
+                            cursor-pointer
+                          "
+                        >
+                          <div
+                            className="
+                              flex
+                              items-start
+                              justify-between
+                              gap-3
+                              mb-4
+                            "
+                          >
+                            <div
+                              className="
+                                p-2.5
+                                rounded-xl
+                                bg-theme-card
+                                dark:bg-zinc-800
+                                border
+                                border-theme-border
+                                text-blue-400
+                              "
+                            >
+                              <TechIcon
+                                name={
+                                  skill.name
+                                }
+                                size={20}
+                                className="w-5 h-5"
+                              />
+                            </div>
+
+                            <span
+                              className="
+                                text-[10px]
+                                font-bold
+                                uppercase
+                                tracking-wider
+                                text-theme-text-muted
+                                px-2
+                                py-1
+                                rounded-full
+                                bg-theme-card
+                                border
+                                border-theme-border
+                              "
+                            >
+                              {
+                                category
+                              }
+                            </span>
+                          </div>
+
+                          <h3
+                            className="
+                              text-lg
+                              font-bold
+                              text-theme-text
+                              mb-2
+                              group-hover:text-blue-400
+                              transition-colors
+                            "
+                          >
+                            {
+                              skill.name
+                            }
+                          </h3>
+
+                          {overview && (
+                            <p
+                              className="
+                                text-xs
+                                leading-relaxed
+                                text-theme-text-secondary
+                                line-clamp-3
+                                mb-4
+                              "
+                            >
+                              {
+                                overview
+                              }
+                            </p>
+                          )}
+
+                          <div className="space-y-3">
+                            {/* Proficiency */}
+
+                            <div>
+                              <div
+                                className="
+                                  flex
+                                  justify-between
+                                  items-center
+                                  mb-1.5
+                                "
+                              >
+                                <span
+                                  className="
+                                    text-[10px]
+                                    font-semibold
+                                    uppercase
+                                    tracking-wider
+                                    text-theme-text-muted
+                                  "
+                                >
+                                  Proficiency
+                                </span>
+
+                                <span
+                                  className="
+                                    text-xs
+                                    font-bold
+                                    text-blue-400
+                                  "
+                                >
+                                  {
+                                    proficiency
+                                  }
+                                  %
+                                </span>
+                              </div>
+
+                              <div
+                                className="
+                                  h-1.5
+                                  rounded-full
+                                  bg-slate-200
+                                  dark:bg-zinc-800
+                                  overflow-hidden
+                                "
+                              >
+                                <div
+                                  className="
+                                    h-full
+                                    rounded-full
+                                    bg-blue-500
+                                    transition-all
+                                  "
+                                  style={{
+                                    width: `${proficiency}%`,
+                                  }}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Experience */}
+
+                            <div
+                              className="
+                                flex
+                                items-center
+                                gap-2
+                                text-xs
+                                text-theme-text-muted
+                              "
+                            >
+                              <Clock className="w-3.5 h-3.5" />
+
+                              <span>
+                                {
+                                  experience
+                                }
+                              </span>
+                            </div>
+                          </div>
+                        </motion.button>
+                      );
+                    }
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            </div>
+          )}
+
+        {/* ====================================================
+            PAGINATION
+        ==================================================== */}
+
+        {filteredSkills.length >
+          pageSize && (
+          <div
+            className="
+              mt-8
+              flex
+              flex-col
+              sm:flex-row
+              items-center
+              justify-between
+              gap-4
+            "
+          >
+            <div
+              className="
+                flex
+                items-center
+                gap-2
+                text-xs
+                text-theme-text-muted
+              "
+            >
+              <span>
+                Page
+              </span>
+
+              <strong className="text-theme-text">
+                {currentPage}
+              </strong>
+
+              <span>
+                of
+              </span>
+
+              <strong className="text-theme-text">
+                {totalPages}
+              </strong>
+            </div>
+
+            <div
+              className="
+                flex
+                items-center
+                gap-2
+              "
+            >
+              <button
+                type="button"
+                disabled={
+                  currentPage <= 1
+                }
+                onClick={() =>
+                  setCurrentPage(
+                    (page) =>
+                      Math.max(
+                        1,
+                        page - 1
+                      )
+                  )
+                }
+                className="
+                  inline-flex
+                  items-center
+                  gap-1
+                  px-3
+                  py-2
+                  rounded-lg
+                  border
+                  border-theme-border
+                  bg-theme-bg
+                  text-xs
+                  font-semibold
+                  text-theme-text
+                  disabled:opacity-40
+                  disabled:cursor-not-allowed
+                "
+              >
+                <ChevronLeft className="w-4 h-4" />
+
+                Previous
+              </button>
+
+              <button
+                type="button"
+                disabled={
+                  currentPage >=
+                  totalPages
+                }
+                onClick={() =>
+                  setCurrentPage(
+                    (page) =>
+                      Math.min(
+                        totalPages,
+                        page + 1
+                      )
+                  )
+                }
+                className="
+                  inline-flex
+                  items-center
+                  gap-1
+                  px-3
+                  py-2
+                  rounded-lg
+                  border
+                  border-theme-border
+                  bg-theme-bg
+                  text-xs
+                  font-semibold
+                  text-theme-text
+                  disabled:opacity-40
+                  disabled:cursor-not-allowed
+                "
+              >
+                Next
+
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ======================================================
+          SKILL DETAIL MODAL
+      ====================================================== */}
+
+      <AnimatePresence>
+        {selectedSkill && (
+          <motion.div
+            className="
+              fixed
+              inset-0
+              z-[100]
+              flex
+              items-center
+              justify-center
+              p-4
+              bg-black/70
+              backdrop-blur-sm
+            "
+            initial={{
+              opacity: 0,
+            }}
+            animate={{
+              opacity: 1,
+            }}
+            exit={{
+              opacity: 0,
+            }}
+            onClick={() =>
+              setSelectedSkill(
+                null
+              )
+            }
+          >
+            <motion.div
+              initial={{
+                opacity: 0,
+                scale: 0.96,
+                y: 15,
+              }}
+              animate={{
+                opacity: 1,
+                scale: 1,
+                y: 0,
+              }}
+              exit={{
+                opacity: 0,
+                scale: 0.96,
+                y: 15,
+              }}
+              transition={{
+                duration: 0.2,
+              }}
+              onClick={(
+                event
+              ) =>
+                event.stopPropagation()
+              }
+              className="
+                w-full
+                max-w-xl
+                rounded-2xl
+                border
+                border-theme-border
+                bg-theme-card
+                dark:bg-[#121214]
+                shadow-2xl
+                overflow-hidden
+              "
+            >
+              {/* Modal Header */}
+
+              <div
+                className="
+                  flex
+                  items-start
+                  justify-between
+                  gap-4
+                  p-6
+                  border-b
+                  border-theme-border
+                "
+              >
+                <div
+                  className="
+                    flex
+                    items-center
+                    gap-4
+                  "
+                >
+                  <div
+                    className="
+                      p-3
+                      rounded-xl
+                      bg-blue-500/10
+                      text-blue-400
+                      border
+                      border-blue-500/20
+                    "
+                  >
+                    <TechIcon
+                      name={
+                        selectedSkill.name
+                      }
+                      size={28}
+                      className="w-7 h-7"
+                    />
+                  </div>
+
+                  <div>
+                    <h3
+                      className="
+                        text-xl
+                        font-bold
+                        text-theme-text
+                      "
+                    >
+                      {
+                        selectedSkill.name
+                      }
+                    </h3>
+
+                    <p
+                      className="
+                        text-xs
+                        text-theme-text-muted
+                        mt-1
+                      "
+                    >
+                      {
+                        getCategoryName(
+                          selectedSkill
+                        ) ||
+                        'General'
+                      }
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedSkill(
+                      null
+                    )
+                  }
+                  className="
+                    p-2
+                    rounded-lg
+                    text-theme-text-muted
+                    hover:text-theme-text
+                    hover:bg-theme-bg
+                  "
+                  aria-label="Close skill details"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+
+              <div className="p-6 space-y-6">
+                {/* Overview */}
+
+                {getOverview(
+                  selectedSkill
+                ) && (
+                  <div>
+                    <div
+                      className="
+                        flex
+                        items-center
+                        gap-2
+                        mb-2
+                        text-xs
+                        font-bold
+                        uppercase
+                        tracking-wider
+                        text-theme-text-muted
+                      "
+                    >
+                      <Briefcase className="w-3.5 h-3.5" />
+
+                      Overview
+                    </div>
+
+                    <p
+                      className="
+                        text-sm
+                        leading-relaxed
+                        text-theme-text-secondary
+                      "
+                    >
+                      {
+                        getOverview(
+                          selectedSkill
+                        )
+                      }
+                    </p>
+                  </div>
+                )}
+
+                {/* Stats */}
+
+                <div
+                  className="
+                    grid
+                    grid-cols-1
+                    sm:grid-cols-2
+                    gap-3
+                  "
+                >
+                  <div
+                    className="
+                      p-4
+                      rounded-xl
+                      bg-theme-bg
+                      border
+                      border-theme-border
+                    "
+                  >
+                    <div
+                      className="
+                        text-[10px]
+                        uppercase
+                        tracking-wider
+                        text-theme-text-muted
+                        mb-1
+                      "
+                    >
+                      Experience
+                    </div>
+
+                    <div
+                      className="
+                        text-lg
+                        font-bold
+                        text-theme-text
+                      "
+                    >
+                      {
+                        getExperienceDisplay(
+                          selectedSkill
+                        )
+                      }
+                    </div>
+                  </div>
+
+                  <div
+                    className="
+                      p-4
+                      rounded-xl
+                      bg-theme-bg
+                      border
+                      border-theme-border
+                    "
+                  >
+                    <div
+                      className="
+                        text-[10px]
+                        uppercase
+                        tracking-wider
+                        text-theme-text-muted
+                        mb-1
+                      "
+                    >
+                      Proficiency
+                    </div>
+
+                    <div
+                      className="
+                        text-lg
+                        font-bold
+                        text-blue-400
+                      "
+                    >
+                      {
+                        getProficiency(
+                          selectedSkill
+                        )
+                      }
+                      %
+                    </div>
+                  </div>
+                </div>
+
+                {/* Proficiency Bar */}
+
+                <div>
+                  <div
+                    className="
+                      flex
+                      items-center
+                      justify-between
+                      mb-2
+                    "
+                  >
+                    <span
+                      className="
+                        text-xs
+                        font-semibold
+                        text-theme-text-muted
+                      "
+                    >
+                      Knowledge Level
+                    </span>
+
+                    <span
+                      className="
+                        text-xs
+                        font-bold
+                        text-blue-400
+                      "
+                    >
+                      {
+                        getProficiency(
+                          selectedSkill
+                        )
+                      }
+                      %
+                    </span>
+                  </div>
+
+                  <div
+                    className="
+                      h-2
+                      rounded-full
+                      overflow-hidden
+                      bg-slate-200
+                      dark:bg-zinc-800
+                    "
+                  >
+                    <div
+                      className="
+                        h-full
+                        rounded-full
+                        bg-blue-500
+                      "
+                      style={{
+                        width: `${
+                          getProficiency(
+                            selectedSkill
+                          )
+                        }%`,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Tags */}
+
+                {Array.isArray(
+                  (
+                    selectedSkill as any
+                  ).tags
+                ) &&
+                  (
+                    selectedSkill as any
+                  ).tags.length >
+                    0 && (
+                    <div>
+                      <div
+                        className="
+                          text-[10px]
+                          uppercase
+                          tracking-wider
+                          font-bold
+                          text-theme-text-muted
+                          mb-2
+                        "
+                      >
+                        Tags
+                      </div>
+
+                      <div className="
+                        flex
+                        flex-wrap
+                        gap-2
+                      ">
+                        {(
+                          (
+                            selectedSkill as any
+                          ).tags as string[]
+                        ).map(
+                          (
+                            tag,
+                            index
+                          ) => (
+                            <span
+                              key={`${tag}-${index}`}
+                              className="
+                                px-2.5
+                                py-1
+                                rounded-lg
+                                bg-theme-bg
+                                border
+                                border-theme-border
+                                text-xs
+                                text-theme-text-secondary
+                              "
+                            >
+                              {
+                                tag
+                              }
+                            </span>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  );
 };
