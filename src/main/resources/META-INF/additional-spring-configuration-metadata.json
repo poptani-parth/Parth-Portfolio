@@ -1,0 +1,242 @@
+{"properties": [
+  {
+    "name": "mongodb.uri",
+    "type": "java.lang.String",
+    "description": "A description for 'mongodb.uri'"
+  },
+  {
+    "name": "app.rate-limit.contact.max-requests",
+    "type": "java.lang.String",
+    "description": "A description for 'app.rate-limit.contact.max-requests'"
+  },
+  {
+    "name": "app.rate-limit.contact.window-seconds",
+    "type": "java.lang.String",
+    "description": "A description for 'app.rate-limit.contact.window-seconds'"
+  },
+  {
+    "name": "app.mail.from",
+    "type": "java.lang.String",
+    "description": "A description for 'app.mail.from'"
+  },
+  {
+    "name": "app.mail.to",
+    "type": "java.lang.String",
+    "description": "A description for 'app.mail.to'"
+  },
+  {
+    "name": "spring.mail.host",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.mail.host'"
+  },
+  {
+    "name": "spring.mail.port",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.mail.port'"
+  },
+  {
+    "name": "spring.mail.username",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.mail.username'"
+  },
+  {
+    "name": "spring.mail.properties.mail.smtp.auth",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.mail.properties.mail.smtp.auth'"
+  },
+  {
+    "name": "spring.mail.password",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.mail.password'"
+  },
+  {
+    "name": "spring.mail.properties.mail.smtp.starttls.enable",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.mail.properties.mail.smtp.starttls.enable'"
+  },
+  {
+    "name": "springdoc.api-docs.path",
+    "type": "java.lang.String",
+    "description": "A description for 'springdoc.api-docs.path'"
+  },
+  {
+    "name": "springdoc.swagger-ui.path",
+    "type": "java.lang.String",
+    "description": "A description for 'springdoc.swagger-ui.path'"
+  },
+  {
+    "name": "spring.mongodb.mail.host",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.mongodb.mail.host'"
+  },
+  {
+    "name": "spring.mongodb.mail.port",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.mongodb.mail.port'"
+  },
+  {
+    "name": "spring.mongodb.mail.port",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.mongodb.mail.port'"
+  },
+  {
+    "name": "spring.mongodb.mail.password",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.mongodb.mail.password'"
+  },
+  {
+    "name": "spring.mongodb.mail.properties.mail.smtp.auth",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.mongodb.mail.properties.mail.smtp.auth'"
+  },
+  {
+    "name": "spring.mongodb.mail.username",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.mongodb.mail.username'"
+  },
+  {
+    "name": "spring.mongodb.mail.properties.mail.smtp.starttls.enable",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.mongodb.mail.properties.mail.smtp.starttls.enable'"
+  },
+  {
+    "name": "contact.mail.to",
+    "type": "java.lang.String",
+    "description": "A description for 'contact.mail.to'"
+  },
+  {
+    "name": "contact.rate-limit.max-requests",
+    "type": "java.lang.String",
+    "description": "A description for 'contact.rate-limit.max-requests'"
+  },
+  {
+    "name": "contact.rate-limit.window-minutes",
+    "type": "java.lang.String",
+    "description": "A description for 'contact.rate-limit.window-minutes'"
+  },
+  {
+    "name": "management.endpoints.web.exposure.include",
+    "type": "java.lang.String",
+    "description": "A description for 'management.endpoints.web.exposure.include'"
+  },
+  {
+    "name": "management.endpoint.health.show-details",
+    "type": "java.lang.String",
+    "description": "A description for 'management.endpoint.health.show-details'"
+  },
+  {
+    "name": "spring.servler.multipart.max-file-size",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.servler.multipart.max-file-size'"
+  },
+  {
+    "name": "spring.servler.multipart.max-request-size",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.servler.multipart.max-request-size'"
+  },
+  {
+    "name": "app.storage.local-dir",
+    "type": "java.lang.String",
+    "description": "A description for 'app.storage.local-dir'"
+  },
+  {
+    "name": "app.storage.public-base-url",
+    "type": "java.lang.String",
+    "description": "A description for 'app.storage.public-base-url'"
+  },
+  {
+    "name": "spring.mongodb.auto-index-creation",
+    "type": "java.lang.String",
+    "description": "A description for 'spring.mongodb.auto-index-creation'"
+  },
+  {
+    "name": "app.security.cors.allowed-origin",
+    "type": "java.lang.String",
+    "description": "A description for 'app.security.cors.allowed-origin'"
+  },
+  {
+    "name": "app.security.jwt.secret",
+    "type": "java.lang.String",
+    "description": "A description for 'app.security.jwt.secret'"
+  },
+  {
+    "name": "app.security.jwt.access-ttl",
+    "type": "java.lang.String",
+    "description": "A description for 'app.security.jwt.access-ttl'"
+  },
+  {
+    "name": "app.security.jwt.refresh-ttl",
+    "type": "java.lang.String",
+    "description": "A description for 'app.security.jwt.refresh-ttl'"
+  },
+  {
+    "name": "app.security.login-rate-limit.max-attempts",
+    "type": "java.lang.String",
+    "description": "A description for 'app.security.login-rate-limit.max-attempts'"
+  },
+  {
+    "name": "app.security.password-reset.mail-to",
+    "type": "java.lang.String",
+    "description": "A description for 'app.security.password-reset.mail-to'"
+  },
+  {
+    "name": "app.security.admin.username",
+    "type": "java.lang.String",
+    "description": "A description for 'app.security.admin.username'"
+  },
+  {
+    "name": "app.security.force-https",
+    "type": "java.lang.String",
+    "description": "A description for 'app.security.force-https'"
+  },
+  {
+    "name": "app.security.admin.password-hash",
+    "type": "java.lang.String",
+    "description": "A description for 'app.security.admin.password-hash'"
+  },
+  {
+    "name": "app.security.password-reset.expose-token",
+    "type": "java.lang.String",
+    "description": "A description for 'app.security.password-reset.expose-token'"
+  },
+  {
+    "name": "app.security.login-rate-limit.window",
+    "type": "java.lang.String",
+    "description": "A description for 'app.security.login-rate-limit.window'"
+  },
+  {
+    "name": "app.security.jwt.issuer",
+    "type": "java.lang.String",
+    "description": "A description for 'app.security.jwt.issuer'"
+  },
+  {
+    "name": "app.security.jwt.audience",
+    "type": "java.lang.String",
+    "description": "A description for 'app.security.jwt.audience'"
+  },
+  {
+    "name": "app.security.admin.bootstrap-enabled",
+    "type": "java.lang.String",
+    "description": "A description for 'app.security.admin.bootstrap-enabled'"
+  },
+  {
+    "name": "app.security.auth.cookies.same-site",
+    "type": "java.lang.String",
+    "description": "A description for 'app.security.auth.cookies.same-site'"
+  },
+  {
+    "name": "app.security.auth.cookies.secure",
+    "type": "java.lang.String",
+    "description": "A description for 'app.security.auth.cookies.secure'"
+  },
+  {
+    "name": "app.security.auth.cookies.access-name",
+    "type": "java.lang.String",
+    "description": "A description for 'app.security.auth.cookies.access-name'"
+  },
+  {
+    "name": "app.security.auth.cookies.refresh-name",
+    "type": "java.lang.String",
+    "description": "A description for 'app.security.auth.cookies.refresh-name'"
+  }
+]}

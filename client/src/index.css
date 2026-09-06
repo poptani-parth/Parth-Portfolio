@@ -1,0 +1,122 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Outfit", "Plus Jakarta Sans", "Inter", sans-serif;
+  --font-syne: "Syne", sans-serif;
+  --font-cambria: Cambria, "Cambria Math", "Calisto MT", Georgia, "Times New Roman", serif;
+}
+
+.font-syne {
+  font-family: 'Syne', sans-serif;
+}
+
+.font-cambria {
+  font-family: Cambria, "Cambria Math", "Calisto MT", Georgia, "Times New Roman", serif;
+}
+
+.font-serif {
+  font-family: Cambria, "Cambria Math", "Calisto MT", Georgia, "Times New Roman", serif;
+}
+
+:root {
+  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  --bg-main: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-card-elevated: #f1f5f9;
+  --bg-input: #ffffff;
+  --text-main: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --border-main: #e2e8f0;
+  --border-subtle: #cbd5e1;
+}
+
+html.dark {
+  --bg-main: #090909;
+  --bg-card: #0e0e0e;
+  --bg-card-elevated: #141414;
+  --bg-input: #121212;
+  --text-main: #f4f4f5;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --border-main: #27272a;
+  --border-subtle: #3f3f46;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  }
+  
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+    transition: background-color 0.25s ease, color 0.25s ease;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font-family: inherit;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--bg-main);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 35s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+} 
+
+.stroke-text {
+  -webkit-text-stroke: 1.5px rgba(15, 23, 42, 0.35);
+  color: transparent;
+}
+
+html.dark .stroke-text {
+  -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.25);
+  color: transparent;
+}
+
+.stroke-text-light {
+  -webkit-text-stroke: 1px rgba(15, 23, 42, 0.2);
+  color: transparent;
+}
+
+html.dark .stroke-text-light {
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.15);
+  color: transparent;
+}

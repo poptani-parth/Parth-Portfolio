@@ -1,0 +1,255 @@
+PARTH-PORTFOLIO BUG REPORT
+Generated: 2026-09-01T16:30:06.198Z
+Project root: P:\Github\Parth-Portfolio\portfolio
+
+========================================
+FRONTEND
+========================================
+
+[1] POSSIBLE_REACT_INPUT_BUG
+File: client\src\components\admin\sections\ContactMessagesAdminSection.tsx
+Line: 164
+Message: Possible uncontrolled → controlled input. Check whether value can be undefined.
+
+[2] POSSIBLE_REACT_INPUT_BUG
+File: client\src\components\admin\sections\ExperienceAdminSection.tsx
+Line: 374
+Message: Possible uncontrolled → controlled input. Check whether value can be undefined.
+
+[3] POSSIBLE_REACT_INPUT_BUG
+File: client\src\components\admin\sections\ProjectsAdminSection.tsx
+Line: 427
+Message: Possible uncontrolled → controlled input. Check whether value can be undefined.
+
+[4] POSSIBLE_REACT_INPUT_BUG
+File: client\src\components\admin\sections\SkillCategoriesAdminSection.tsx
+Line: 227
+Message: Possible uncontrolled → controlled input. Check whether value can be undefined.
+
+[5] POSSIBLE_REACT_INPUT_BUG
+File: client\src\components\admin\sections\SkillCategoriesAdminSection.tsx
+Line: 245
+Message: Possible uncontrolled → controlled input. Check whether value can be undefined.
+
+[6] POSSIBLE_REACT_INPUT_BUG
+File: client\src\components\admin\sections\SkillsAdminSection.tsx
+Line: 281
+Message: Possible uncontrolled → controlled input. Check whether value can be undefined.
+
+[7] POSSIBLE_REACT_INPUT_BUG
+File: client\src\context\ThemeContext.tsx
+Line: 89
+Message: Possible uncontrolled → controlled input. Check whether value can be undefined.
+
+[8] POSSIBLE_REACT_INPUT_BUG
+File: client\src\context\ToastContext.tsx
+Line: 55
+Message: Possible uncontrolled → controlled input. Check whether value can be undefined.
+
+[9] HARDCODED_URL
+File: client\vite.config.ts
+Line: 17
+Message: target: 'http://localhost:8080',
+
+========================================
+BACKEND
+========================================
+
+[1] SECURITY
+File: src\main\java\com\parth\portfolio\portfolio\admin\service\AdminAuthService.java
+Line: 75
+Message: Possible password/password-hash logging.
+
+[2] SECURITY
+File: src\main\java\com\parth\portfolio\portfolio\config\SecurityConfig.java
+Line: 58
+Message: Check admin endpoint using permitAll().
+
+[3] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 69
+Message: //     //         System.out.println("==================================================");
+
+[4] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 70
+Message: //     //         System.out.println(">>> ADMIN CREDENTIALS SYNCHRONIZED SUCCESSFULLY");
+
+[5] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 71
+Message: //     //         System.out.println(">>> Username: " + username);
+
+[6] SECURITY
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 72
+Message: Possible password/password-hash logging.
+
+[7] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 72
+Message: //     //         System.out.println(">>> Match Test: " + passwordEncoder.matches(rawPassword, admin.getPassword()));
+
+[8] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 73
+Message: //     //         System.out.println("==================================================");
+
+[9] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 149
+Message: //         System.out.println("================ ADMIN LOGIN DIAGNOSTIC ================");
+
+[10] SECURITY
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 150
+Message: Possible password/password-hash logging.
+
+[11] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 150
+Message: //         System.out.println(">>> passwordEncoder bean class: " + passwordEncoder.getClass().getName());
+
+[12] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 151
+Message: //         System.out.println(">>> Looking up username: '" + username + "'");
+
+[13] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 156
+Message: //             System.out.println(">>> RESULT: No AdminUser document found for that username.");
+
+[14] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 157
+Message: //             System.out.println(">>> This means bootstrap has not run yet, or the username in");
+
+[15] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 158
+Message: //             System.out.println(">>> .env doesn't match what's actually stored in MongoDB.");
+
+[16] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 159
+Message: //             System.out.println("==========================================================");
+
+[17] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 166
+Message: //         System.out.println(">>> Document id: " + user.getId());
+
+[18] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 167
+Message: //         System.out.println(">>> active: " + user.isActive());
+
+[19] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 168
+Message: //         System.out.println(">>> role: " + user.getRole());
+
+[20] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 169
+Message: //         System.out.println(">>> updatedAt: " + user.getUpdatedAt());
+
+[21] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 170
+Message: //         System.out.println(">>> Stored hash (from DB, right now): " + storedHash);
+
+[22] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 171
+Message: //         System.out.println(">>> Stored hash length: " + (storedHash == null ? "null" : storedHash.length()));
+
+[23] SECURITY
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 174
+Message: Possible password/password-hash logging.
+
+[24] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 174
+Message: //             System.out.println(">>> ADMIN_DEBUG_TEST_PASSWORD not set - skipping match test.");
+
+[25] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 175
+Message: //             System.out.println("==========================================================");
+
+[26] SECURITY
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 180
+Message: Possible password/password-hash logging.
+
+[27] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 180
+Message: //         System.out.println(">>> Testing password: '" + testPassword + "'");
+
+[28] SECURITY
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 181
+Message: Possible password/password-hash logging.
+
+[29] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 181
+Message: //         System.out.println(">>> passwordEncoder.matches(...) result: " + matches);
+
+[30] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 189
+Message: //             System.out.println(">>> Sanity check - encode+matches on a brand-new hash: " + selfCheck);
+
+[31] SECURITY
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 190
+Message: Possible password/password-hash logging.
+
+[32] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 190
+Message: //             System.out.println(">>> (If this line is also false, the PasswordEncoder bean itself is broken.)");
+
+[33] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 191
+Message: //             System.out.println(">>> (If this line is true, the DB-stored hash above is simply not the");
+
+[34] SECURITY
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 192
+Message: Possible password/password-hash logging.
+
+[35] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 192
+Message: //             System.out.println(">>>  bcrypt hash of the password you're testing - re-check for a stale");
+
+[36] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 193
+Message: //             System.out.println(">>>  restart, a duplicate admin document, or a typo in either value.)");
+
+[37] DEBUG_LOG
+File: src\main\java\com\parth\portfolio\PortfolioApplication.java
+Line: 196
+Message: //         System.out.println("==========================================================");
+
+========================================
+RUNTIME
+========================================
+No issues detected.
+
+========================================
+PROJECT
+========================================
+No issues detected.
+
+========================================
+TOTAL ISSUES: 46
+========================================

@@ -1,0 +1,343 @@
+﻿###############################################################################
+# PORTFOLIO BACKEND REST API TEST SUITE
+#
+# Compatible with:
+# - VS Code (REST Client extension by Huachao Mao)
+# - IntelliJ IDEA (HTTP Client)
+# - Postman / Insomnia (via import)
+###############################################################################
+
+@baseUrl = http://localhost:8080
+@adminUsername = admin
+@adminPassword = Parth@123Poptani
+
+###############################################################################
+# 1. SYSTEM & HEALTH CHECKS
+###############################################################################
+
+### 1.1 Spring Boot Actuator Health
+GET {{baseUrl}}/actuator/health
+Accept: application/json
+
+### 1.2 Spring Boot Actuator Info
+GET {{baseUrl}}/actuator/info
+Accept: application/json
+
+
+###############################################################################
+# 2. PUBLIC READ-ONLY APIS
+###############################################################################
+
+### 2.1 Get Site Profile
+GET {{baseUrl}}/api/profile
+Accept: application/json
+
+### 2.2 Get Skills List
+GET {{baseUrl}}/api/skills
+Accept: application/json
+
+### 2.3 Get Projects List
+GET {{baseUrl}}/api/projects
+Accept: application/json
+
+### 2.4 Get Experiences List
+GET {{baseUrl}}/api/experience
+Accept: application/json
+
+### 2.5 Get Education List
+GET {{baseUrl}}/api/education
+Accept: application/json
+
+### 2.6 Get Media Assets List
+GET {{baseUrl}}/api/media
+Accept: application/json
+
+
+###############################################################################
+# 3. PUBLIC CONTACT FORM & SECURITY VALIDATION
+###############################################################################
+
+### 3.1 Send Valid Contact Message (Positive Test)
+POST {{baseUrl}}/api/contact
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Alex Johnson",
+  "email": "alex.johnson@example.com",
+  "subject": "Collaboration on Full-Stack Project",
+  "message": "Hi Parth, I saw your portfolio and would like to discuss a potential project collaboration."
+}
+
+### 3.2 Send Invalid Contact Message - Empty Fields (Negative Test: Expect 400)
+POST {{baseUrl}}/api/contact
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "",
+  "email": "not-an-email",
+  "subject": "",
+  "message": ""
+}
+
+### 3.3 Send Contact Message with CRLF Injection (Negative Test: Expect 400)
+POST {{baseUrl}}/api/contact
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Attacker\r\nBcc: victim@domain.com",
+  "email": "attacker@example.com",
+  "subject": "CRLF Injection\r\nTest",
+  "message": "Attempting SMTP header injection."
+}
+
+
+###############################################################################
+# 4. SECURITY BOUNDARIES (UNAUTHENTICATED ACCESS DENIAL)
+###############################################################################
+
+### 4.1 Try to Access Admin Profile without Auth (Expect 401 or 403)
+GET {{baseUrl}}/api/admin/profile
+Accept: application/json
+
+### 4.2 Try to Access Admin Skills without Auth (Expect 401 or 403)
+GET {{baseUrl}}/api/admin/skills
+Accept: application/json
+
+### 4.3 Try to Access Admin Contact Messages without Auth (Expect 401 or 403)
+GET {{baseUrl}}/api/admin/contact-messages
+Accept: application/json
+
+
+###############################################################################
+# 5. AUTHENTICATION & CSRF LIFECYCLE
+###############################################################################
+
+### 5.1 Fetch CSRF Token
+# @name getCsrf
+GET {{baseUrl}}/api/admin/auth/csrf
+Accept: application/json
+
+### Extract CSRF Token from response
+@csrfToken = {{getCsrf.response.body.token}}
+
+### 5.2 Admin Login (Sets HttpOnly Cookies: admin-access and admin-refresh)
+# @name adminLogin
+POST {{baseUrl}}/api/admin/auth/login
+Content-Type: application/json
+Accept: application/json
+X-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "username": "{{adminUsername}}",
+  "password": "{{adminPassword}}"
+}
+
+### 5.3 Token Refresh (Uses HttpOnly admin-refresh cookie)
+# @name refreshToken
+POST {{baseUrl}}/api/admin/auth/refresh
+Content-Type: application/json
+Accept: application/json
+X-XSRF-TOKEN: {{csrfToken}}
+
+### 5.4 Password Reset Request (Dual Rate-Limited: IP + Username)
+POST {{baseUrl}}/api/admin/auth/password-reset
+Content-Type: application/json
+Accept: application/json
+X-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "username": "{{adminUsername}}"
+}
+
+
+###############################################################################
+# 6. AUTHENTICATED ADMIN OPERATIONS
+###############################################################################
+
+### 6.1 Get Admin Profile (Decoupled DTO)
+GET {{baseUrl}}/api/admin/profile
+Accept: application/json
+X-XSRF-TOKEN: {{csrfToken}}
+
+### 6.2 Update Admin Profile
+PUT {{baseUrl}}/api/admin/profile
+Content-Type: application/json
+Accept: application/json
+X-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "name": "Parth Poptani",
+  "heroTitle": "Full-Stack Engineer & DevSecOps Specialist",
+  "heroSubtitle": "Building high-performance, secure distributed systems",
+  "bio": "Experienced software engineer passionate about clean architecture, Spring Boot, and cloud platforms.",
+  "email": "contact@parthpoptani.com",
+  "phone": "+1 555-0199",
+  "location": "San Francisco, CA",
+  "resumeUrl": "https://example.com/parth-resume.pdf",
+  "githubUrl": "https://github.com/poptani-parth",
+  "linkedinUrl": "https://linkedin.com/in/parth-poptani",
+  "profileImageUrl": "https://example.com/avatar.jpg",
+  "active": true
+}
+
+### 6.3 Admin Skills - Create Skill
+# @name createSkill
+POST {{baseUrl}}/api/admin/skills
+Content-Type: application/json
+Accept: application/json
+X-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "name": "Spring Security 6",
+  "category": "Backend",
+  "displayOrder": 1,
+  "overview": "OAuth2, JWT, CSRF, Session Management, Method Security",
+  "yearsOfExperience": 4.0,
+  "knowledgePercentage": 95,
+  "active": true
+}
+
+### Capture Created Skill ID
+@createdSkillId = {{createSkill.response.body.id}}
+
+### 6.4 Admin Skills - Get All Skills
+GET {{baseUrl}}/api/admin/skills
+Accept: application/json
+X-XSRF-TOKEN: {{csrfToken}}
+
+### 6.5 Admin Skills - Get Skill by ID
+GET {{baseUrl}}/api/admin/skills/{{createdSkillId}}
+Accept: application/json
+X-XSRF-TOKEN: {{csrfToken}}
+
+### 6.6 Admin Skills - Update Skill
+PUT {{baseUrl}}/api/admin/skills/{{createdSkillId}}
+Content-Type: application/json
+Accept: application/json
+X-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "name": "Spring Security 6 (Advanced)",
+  "category": "Backend",
+  "displayOrder": 1,
+  "overview": "Token Family Rotation, Redis Integration, Hardened Cookies",
+  "yearsOfExperience": 4.5,
+  "knowledgePercentage": 98,
+  "active": true
+}
+
+### 6.7 Admin Skills - Delete Skill (Cleanup)
+DELETE {{baseUrl}}/api/admin/skills/{{createdSkillId}}
+Accept: application/json
+X-XSRF-TOKEN: {{csrfToken}}
+
+
+###############################################################################
+# 7. ADMIN PROJECTS CRUD
+###############################################################################
+
+### 7.1 Admin Projects - Create Project
+# @name createProject
+POST {{baseUrl}}/api/admin/projects
+Content-Type: application/json
+Accept: application/json
+X-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "title": "Cloud Portfolio Architecture",
+  "description": "Production-hardened portfolio system with Spring Boot backend, React client, MongoDB, and Redis.",
+  "category": "Full Stack",
+  "technologies": ["Java 17", "Spring Boot", "Redis", "MongoDB", "TypeScript"],
+  "githubUrl": "https://github.com/poptani-parth/Parth-Portfolio",
+  "liveUrl": "https://parthpoptani.com",
+  "imageUrl": "https://images.unsplash.com/photo-1555066931-4365d14bab8c",
+  "role": "Lead Architect & Developer",
+  "features": [
+    "Single-use refresh token family rotation",
+    "Dual-key rate limiting defense",
+    "CRLF header injection immunity"
+  ],
+  "displayOrder": 1,
+  "featured": true,
+  "active": true
+}
+
+### Capture Created Project ID
+@createdProjectId = {{createProject.response.body.id}}
+
+### 7.2 Admin Projects - Delete Project (Cleanup)
+DELETE {{baseUrl}}/api/admin/projects/{{createdProjectId}}
+Accept: application/json
+X-XSRF-TOKEN: {{csrfToken}}
+
+
+###############################################################################
+# 8. ADMIN CONTACT MESSAGES
+###############################################################################
+
+### 8.1 Admin Contact Messages - List All Messages
+GET {{baseUrl}}/api/admin/contact-messages
+Accept: application/json
+X-XSRF-TOKEN: {{csrfToken}}
+
+
+###############################################################################
+# 9. PAYLOAD & INJECTION DEFENSE TESTS
+###############################################################################
+
+### 9.1 Malformed JSON Payload (Expect 400 Bad Request)
+POST {{baseUrl}}/api/admin/skills
+Content-Type: application/json
+Accept: application/json
+X-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "name": "Malformed JSON",
+  "category": 
+
+### 9.2 Unknown Properties Mass-Assignment Rejection (Expect 400 Bad Request)
+POST {{baseUrl}}/api/admin/skills
+Content-Type: application/json
+Accept: application/json
+X-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "name": "Mass Assignment Attempt",
+  "category": "Backend",
+  "displayOrder": 1,
+  "active": true,
+  "injectedAdminPrivileges": true
+}
+
+### 9.3 XSS Scheme in Project URL (Expect 400 Bad Request)
+POST {{baseUrl}}/api/admin/projects
+Content-Type: application/json
+Accept: application/json
+X-XSRF-TOKEN: {{csrfToken}}
+
+{
+  "title": "XSS Project Test",
+  "description": "Testing rejection of javascript: pseudo-protocols",
+  "category": "Security",
+  "technologies": ["Security"],
+  "githubUrl": "javascript:alert(document.cookie)",
+  "displayOrder": 1,
+  "active": true
+}
+
+
+###############################################################################
+# 10. ADMIN LOGOUT & SESSION INVALIDATION
+###############################################################################
+
+### 10.1 Admin Logout (Clears Cookies and Revokes Token Family)
+POST {{baseUrl}}/api/admin/auth/logout
+Accept: application/json
+X-XSRF-TOKEN: {{csrfToken}}
+
+### 10.2 Verify Admin Access is Denied Post-Logout (Expect 401 or 403)
+GET {{baseUrl}}/api/admin/profile
+Accept: application/json
